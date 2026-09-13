@@ -33,12 +33,21 @@
         .logo {
             width: min(600px, 90%);
             height: auto;
-            margin-bottom: 35px;
+            margin-bottom: 30px;
         }
 
         h1 {
             font-size: 46px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+        }
+
+        /* BONECO */
+        .mascot {
+            width: min(500px, 90%);
+            height: auto;
+            display: block;
+            margin: 10px auto 30px;
+            border-radius: 10px;
         }
 
         p {
@@ -65,12 +74,24 @@
         }
 
         @media (max-width: 600px) {
+
+            .container {
+                padding: 30px 15px;
+            }
+
             .logo {
                 width: 95%;
+                margin-bottom: 25px;
             }
 
             h1 {
                 font-size: 32px;
+                line-height: 1.2;
+            }
+
+            .mascot {
+                width: 100%;
+                margin: 15px auto 25px;
             }
 
             p {
@@ -84,25 +105,37 @@
 
     <div class="container">
 
+        <!-- LOGO -->
         <img
             src="logo-nao-monogamico.png"
             alt="Não Monogâmico"
             class="logo"
         >
 
+        <!-- TÍTULO -->
         <h1>
             Em Breve Estaremos no Ar!
         </h1>
 
+        <!-- BONECO CONSTRUINDO O SITE -->
+        <img
+            src="boneco site construcao.png"
+            alt="Mascote construindo o site Não Monogâmico"
+            class="mascot"
+        >
+
+        <!-- TEXTO -->
         <p>
             Um novo espaço para conversar, aprender e refletir
             sobre relacionamentos, liberdade e novas formas de amar.
         </p>
 
+        <!-- BOTÃO -->
         <div class="coming-soon">
             EM BREVE
         </div>
 
+        <!-- RODAPÉ -->
         <div class="footer">
             © 2026 Não Monogâmico
         </div>
