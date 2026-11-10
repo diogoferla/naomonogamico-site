@@ -1,0 +1,93 @@
+# Configuração da Netlify (lida automaticamente no deploy).
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Domínio principal: www.naomonogamico.com.br.
+# O redirecionamento de naomonogamico.com.br → www é feito pela própria Netlify
+# ao definir o domínio "www" como principal (Domain management → Primary domain).
+
+# Cabeçalhos de segurança para todo o site
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+    X-Frame-Options = "SAMEORIGIN"
+
+# Arquivos com nome versionado podem ficar em cache por 1 ano
+[[headers]]
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# O painel não deve ser indexado nem guardado em cache (para refletir mudanças de configuração)
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-cache"
+
+# Arquivos de agenda (.ics)
+[[headers]]
+  for = "/eventos/*.ics"
+  [headers.values]
+    Content-Type = "text/calendar; charset=utf-8"
+
+# Endereços antigos/alternativos → páginas atuais
+[[redirects]]
+  from = "/blog"
+  to = "/conteudos"
+  status = 301
+
+[[redirects]]
+  from = "/blog/*"
+  to = "/conteudos/:splat"
+  status = 301
+
+[[redirects]]
+  from = "/politica-de-privacidade"
+  to = "/privacidade"
+  status = 301
+
+[[redirects]]
+  from = "/entrevistas"
+  to = "/conversas"
+  status = 301
+
+# Páginas que também têm subpastas (ex.: /eventos e /eventos/nome-do-evento):
+# garante que o endereço sem barra sirva a página de listagem.
+[[redirects]]
+  from = "/eventos"
+  to = "/eventos.html"
+  status = 200
+[[redirects]]
+  from = "/conteudos"
+  to = "/conteudos.html"
+  status = 200
+[[redirects]]
+  from = "/entenda"
+  to = "/entenda.html"
+  status = 200
+[[redirects]]
+  from = "/profissionais"
+  to = "/profissionais.html"
+  status = 200
+[[redirects]]
+  from = "/iniciativas"
+  to = "/iniciativas.html"
+  status = 200
+[[redirects]]
+  from = "/contribua"
+  to = "/contribua.html"
+  status = 200
+
+# Página 404 personalizada
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
