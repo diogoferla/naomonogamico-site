@@ -1,0 +1,60 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Cover from './Cover.astro';
+import { EVENT_CATEGORIES, findCategory } from '../data/categories';
+import { fmt, slugify } from '../lib/content';
+
+interface Props { event: CollectionEntry<'events'>; headingLevel?: 'h2' | 'h3'; showCover?: boolean }
+const { event, showCover = true } = Astro.props;
+const d = event.data;
+const cat = findCategory(EVENT_CATEGORIES, d.category);
+const place = d.online ? 'Online' : `${d.city}${d.state ? ` · ${d.state}` : ''}`;
+---
+<article
+  class:list={['card', 'event-card', `tone-${cat.tone}`]}
+  data-event
+  data-city={d.online ? 'online' : slugify(d.city)}
+  data-category={d.category}
+  data-name={d.title}
+  data-start={d.start.toISOString()}
+  data-end={(d.end ?? d.start).toISOString()}
+  data-month={fmt.monthKey(d.start)}
+>
+  {showCover && <Cover seed={event.id} tone={cat.tone} image={d.image} alt={d.imageAlt ?? ''} ratio="16 / 8" />}
+  <div class="card-body">
+    <div class="head">
+      <time class="date" datetime={d.start.toISOString()}>
+        <span class="day">{fmt.day(d.start)}</span>
+        <span class="mon">{fmt.month(d.start)}</span>
+      </time>
+      <div class="stack" style="--stack: var(--s-2)">
+        <div class="card-meta">
+          <span class="tag">{cat.label}</span>
+          {d.example && <span class="tag tag-example">Exemplo</span>}
+          <span class="tag tag-outline past-flag" hidden>Já aconteceu</span>
+        </div>
+        <h3><a href={`/eventos/${event.id}`}>{d.title}</a></h3>
+      </div>
+    </div>
+    <p class="summary">{d.summary}</p>
+    <p class="where muted">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M8 1a5 5 0 0 0-5 5c0 3.6 5 9 5 9s5-5.4 5-9a5 5 0 0 0-5-5Zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/></svg>
+      {place} · {fmt.weekday(d.start)}, {fmt.time(d.start)}
+    </p>
+  </div>
+</article>
+
+<style>
+  .head { display: flex; gap: var(--s-4); align-items: flex-start; }
+  .date {
+    flex: none; display: grid; place-items: center; width: 60px; padding-block: 0.45em;
+    border-radius: 12px; background: var(--ink); color: var(--paper); line-height: 1;
+  }
+  .day { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; }
+  .mon { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+  .summary { color: var(--ink-2); }
+  .where { display: flex; align-items: center; gap: 0.4em; font-size: var(--step--1); margin-top: auto; }
+  .where svg { flex: none; }
+  .event-card.is-past .date { background: var(--ink-3); }
+  .event-card.is-past :global(.cover) { filter: grayscale(0.7); opacity: 0.8; }
+</style>

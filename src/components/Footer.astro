@@ -1,0 +1,94 @@
+---
+import { SITE } from '../config/site';
+const year = new Date().getFullYear();
+const hasContacts = Boolean(SITE.social.instagram || SITE.social.email || SITE.social.whatsapp);
+---
+<footer class="site-footer band-ink">
+  <hr class="grad-line top-line" />
+  <div class="wrap">
+    <div class="top">
+      <div class="about stack">
+        <img class="badge" src="/brand/logo-badge.webp" width="720" height="720" alt="Logo Não Monogamia: três figuras com corpos em forma de coração, entrelaçadas. Mais amor, mais liberdade, mais conexões. Respeito, consentimento, autonomia." loading="lazy" decoding="async" />
+        <p class="muted">
+          Um guia independente para quem quer entender a não monogamia e encontrar eventos, conteúdos,
+          iniciativas e profissionais — num só lugar, sem julgamento.
+        </p>
+        <a class="btn btn-ghost btn-sm" href="/contribua">Indique um evento ou iniciativa</a>
+      </div>
+
+      <nav aria-label="Rodapé" class="cols">
+        <div>
+          <h2 class="col-title">Explorar</h2>
+          <ul role="list">
+            <li><a href="/entenda">Entenda a não monogamia</a></li>
+            <li><a href="/conteudos">Conteúdos</a></li>
+            <li><a href="/conversas">Conversas</a></li>
+            <li><a href="/faq">Perguntas frequentes</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="col-title">Encontrar</h2>
+          <ul role="list">
+            <li><a href="/eventos">Eventos</a></li>
+            <li><a href="/iniciativas">Iniciativas</a></li>
+            <li><a href="/profissionais">Profissionais</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="col-title">O projeto</h2>
+          <ul role="list">
+            <li><a href="/sobre">Sobre</a></li>
+            <li><a href="/contribua">Contribua</a></li>
+            <li><a href="/privacidade">Privacidade</a></li>
+          </ul>
+        </div>
+        {hasContacts && (
+          <div>
+            <h2 class="col-title">Contato</h2>
+            <ul role="list">
+              {SITE.social.instagram && <li><a href={SITE.social.instagram} rel="me noopener" target="_blank">Instagram {SITE.social.instagramHandle}<span class="sr-only"> (abre em nova aba)</span></a></li>}
+              {SITE.social.email && <li><a href={`mailto:${SITE.social.email}`}>{SITE.social.email}</a></li>}
+              {SITE.social.whatsapp && <li><a href={SITE.social.whatsapp} rel="noopener" target="_blank">WhatsApp<span class="sr-only"> (abre em nova aba)</span></a></li>}
+            </ul>
+          </div>
+        )}
+      </nav>
+    </div>
+
+    <hr class="line" />
+
+    <div class="bottom">
+      <p>
+        <strong>Guia independente.</strong> O Não Monogâmico não é empresa, clínica, aplicativo de relacionamento nem
+        rede social, e não mantém parceria comercial com as iniciativas e profissionais listados, salvo quando indicado
+        expressamente. As informações têm caráter educativo e não substituem orientação profissional.
+      </p>
+      <p class="copy">© {year} {SITE.name} · {SITE.domainLabel}</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer { position: relative; padding-block: var(--s-8) var(--s-6); margin-top: auto; }
+  .top-line { position: absolute; inset: 0 0 auto 0; }
+  .badge { width: 150px; height: auto; }
+  .top { display: grid; gap: var(--s-7); }
+  .about { --stack: var(--s-5); max-width: 26rem; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--s-6); }
+  .col-title {
+    font-family: var(--font-body); font-size: var(--step--1); font-weight: 600;
+    letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-3); margin-bottom: var(--s-3);
+  }
+  .cols li + li { margin-top: var(--s-2); }
+  .cols a { text-decoration: none; color: var(--ink); display: inline-block; padding-block: 0.15em; overflow-wrap: anywhere; }
+  .cols a:hover { text-decoration: underline; }
+  .line { border: 0; height: 1px; background: var(--line); margin-block: var(--s-7) var(--s-5); }
+  .bottom { display: grid; gap: var(--s-4); font-size: var(--step--1); color: var(--ink-2); }
+  .bottom p { max-width: 70ch; }
+  .bottom strong { color: var(--ink); }
+  .copy { color: var(--ink-3); }
+  @media (min-width: 860px) {
+    .top { grid-template-columns: 1fr 1.3fr; }
+    .bottom { grid-template-columns: 1fr auto; align-items: end; }
+  }
+</style>

@@ -1,0 +1,101 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import ProfessionalCard from '../../components/ProfessionalCard.astro';
+import EmptyState from '../../components/EmptyState.astro';
+import ContributeBand from '../../components/ContributeBand.astro';
+import { getProfessionals, slugify } from '../../lib/content';
+import { PROFESSIONAL_CATEGORIES } from '../../data/categories';
+import { getPage, emphasize } from '../../lib/content';
+const page = (await getPage('profissionais')).data;
+
+const items = await getProfessionals();
+const cities = [...new Map(items.filter((i) => i.data.city).map((i) => [slugify(i.data.city!), i.data.city!])).entries()]
+  .sort((a, b) => a[1].localeCompare(b[1], 'pt-BR'));
+const crumbs = [{ name: 'Profissionais', href: '/profissionais' }];
+---
+<BaseLayout
+  title={page.seo_title}
+  description={page.seo_description}
+  breadcrumbs={crumbs}
+>
+  <PageHeader
+    eyebrow={page.eyebrow}
+    title={emphasize(page.title)}
+    lede={page.lede}
+    breadcrumbs={crumbs}
+    tone="teal"
+  />
+
+  <section class="section">
+    <div class="wrap stack" style="--stack: var(--s-6)" data-directory>
+      <p class="note">
+        <strong>Importante:</strong> o diretório é informativo e está em construção. A presença de um perfil aqui não é
+        uma recomendação, certificação ou vínculo com o Não Monogâmico. Antes de iniciar qualquer atendimento, confira o
+        registro profissional (como CRP, OAB ou CRM) e converse com a pessoa para ver se faz sentido para você. Perfis
+        incluídos a partir de indicações de terceiros são sinalizados como tal.
+      </p>
+
+      <div class="filters" hidden={items.length === 0}>
+        <div class="chips" role="group" aria-label="Filtrar por área">
+          <button type="button" class="chip" data-cat="" aria-pressed="true">Todas as áreas</button>
+          {PROFESSIONAL_CATEGORIES.map((c) => <button type="button" class="chip" data-cat={c.id} aria-pressed="false">{c.label}</button>)}
+        </div>
+        <div class="selects">
+          <div class="field">
+            <label for="f-attendance">Atendimento</label>
+            <select id="f-attendance" class="select" data-filter="attendance" data-match="contains">
+              <option value="">Online ou presencial</option>
+              <option value="online">Online</option>
+              <option value="presencial">Presencial</option>
+            </select>
+          </div>
+          {cities.length > 0 && (
+            <div class="field">
+              <label for="f-city">Cidade</label>
+              <select id="f-city" class="select" data-filter="city">
+                <option value="">Todas</option>
+                {cities.map(([id, label]) => <option value={id}>{label}</option>)}
+              </select>
+            </div>
+          )}
+        </div>
+        <p class="count muted" aria-live="polite" data-count></p>
+      </div>
+
+      <h2 class="sr-only">Lista de profissionais</h2>
+      {items.length > 0 && (
+        <div class="grid" style="--min: 300px">
+          {items.map((i) => <ProfessionalCard item={i} />)}
+        </div>
+      )}
+      <EmptyState
+        title={items.length ? 'Nenhum profissional com esses filtros.' : 'Ainda não há profissionais cadastrados.'}
+        text="Estamos começando esta lista. Se você é profissional ou conhece alguém que atende pessoas não monogâmicas, indique."
+        ctaHref="/contribua?tipo=profissional#formulario"
+        ctaLabel="Indicar um profissional"
+        hidden={items.length > 0}
+        data-empty
+      />
+    </div>
+  </section>
+
+  <ContributeBand
+    title="Você é profissional?"
+    text="Se você atende pessoas não monogâmicas e quer aparecer no diretório, envie suas informações. Os perfis são revisados antes da publicação."
+    type="profissional"
+    label="Quero fazer parte"
+  />
+</BaseLayout>
+
+<script>
+  import { initDirectory } from '../../scripts/directory';
+  const root = document.querySelector<HTMLElement>('[data-directory]');
+  if (root) initDirectory(root, ['profissional', 'profissionais']);
+</script>
+
+<style>
+  .filters { display: flex; flex-direction: column; gap: var(--s-4); }
+  .selects { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 280px)); }
+  .count { font-size: var(--step--1); font-weight: 600; }
+</style>

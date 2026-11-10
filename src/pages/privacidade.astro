@@ -1,0 +1,52 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import { SITE } from '../config/site';
+import { getPage, emphasize, fmt } from '../lib/content';
+
+const entry = await getPage('privacidade');
+const page = entry.data;
+const { Content } = await render(entry);
+const crumbs = [{ name: 'Privacidade', href: '/privacidade' }];
+const { controller, email } = SITE.privacy;
+---
+<BaseLayout title={page.seo_title} description={page.seo_description} breadcrumbs={crumbs}>
+  <PageHeader eyebrow={page.eyebrow} title={emphasize(page.title)} lede={page.lede} breadcrumbs={crumbs} tone="teal">
+    {page.updated && <p class="muted small">Última atualização: <time datetime={page.updated.toISOString()}>{fmt.long(page.updated)}</time></p>}
+  </PageHeader>
+
+  <section class="section">
+    <div class="wrap pv-grid">
+      <div class="prose"><Content /></div>
+      <aside class="pv-box" aria-labelledby="pv-contact">
+        <h2 id="pv-contact">Responsável e contato</h2>
+        {controller ? <p><strong>Responsável pelo tratamento:</strong> {controller}</p> : null}
+        {email ? (
+          <p><strong>Canal para assuntos de privacidade:</strong><br /><a href={`mailto:${email}`}>{email}</a></p>
+        ) : (
+          <p class="pending">O canal oficial de contato para assuntos de privacidade está sendo definido e será publicado aqui.</p>
+        )}
+        <p class="muted small">Também é possível pedir correções e remoções pelo <a href="/contribua?tipo=conteudo#formulario">formulário de contribuição</a> (opção “Apontar uma correção”).</p>
+      </aside>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .small { font-size: var(--step--1); }
+  .pv-grid { display: grid; gap: var(--s-6); align-items: start; }
+  .prose { max-width: var(--wrap-text); }
+  .pv-box {
+    display: flex; flex-direction: column; gap: var(--s-3);
+    background: var(--card); border: 1px solid var(--line-soft); border-top: 4px solid var(--teal);
+    border-radius: var(--radius-l); padding: var(--s-5);
+  }
+  .pv-box h2 { font-size: var(--step-1); }
+  .pv-box a { color: var(--violet-ink); overflow-wrap: anywhere; }
+  .pending { color: var(--sun-ink); }
+  @media (min-width: 1000px) {
+    .pv-grid { grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s-8); }
+    .pv-box { position: sticky; top: 6rem; }
+  }
+</style>

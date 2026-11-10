@@ -1,0 +1,52 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Cover from './Cover.astro';
+import { INITIATIVE_CATEGORIES, findCategory } from '../data/categories';
+import { slugify } from '../lib/content';
+
+interface Props { item: CollectionEntry<'initiatives'> }
+const { item } = Astro.props;
+const d = item.data;
+const cat = findCategory(INITIATIVE_CATEGORIES, d.category);
+const initials = d.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+---
+<article
+  class:list={['card', 'ini-card', `tone-${cat.tone}`]}
+  data-item
+  data-category={d.category}
+  data-region={d.region ? slugify(d.region) : ''}
+  data-name={d.name}
+>
+  <div class="visual">
+    <Cover seed={item.id} tone={cat.tone} image={d.image} alt={d.imageAlt ?? ''} ratio="16 / 7" />
+    {!d.image && <span class="mono" aria-hidden="true">{initials}</span>}
+  </div>
+  <div class="card-body">
+    <div class="card-meta">
+      <span class="tag">{cat.label}</span>
+      {d.example && <span class="tag tag-example">Exemplo</span>}
+      {!d.verified && !d.example && <span class="tag tag-outline">Informações a confirmar</span>}
+    </div>
+    <h3><a href={`/iniciativas/${item.id}`}>{d.name}</a></h3>
+    <p class="desc">{d.description}</p>
+    <p class="foot muted small">
+      <span>{d.region ?? ''}</span>
+      <span class="go" aria-hidden="true">Saiba mais →</span>
+    </p>
+  </div>
+</article>
+
+<style>
+  .visual { position: relative; }
+  .mono {
+    position: absolute; left: var(--s-5); bottom: calc(-1 * var(--s-5));
+    width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--ink); color: var(--paper); font-family: var(--font-display); font-weight: 600; font-size: 1.2rem;
+    border: 3px solid var(--card);
+  }
+  .ini-card .card-body { padding-top: var(--s-6); }
+  .desc { color: var(--ink-2); }
+  .small { font-size: var(--step--1); }
+  .foot { display: flex; justify-content: space-between; gap: var(--s-3); margin-top: auto; padding-top: var(--s-2); }
+  .go { color: var(--tone-ink); font-weight: 600; white-space: nowrap; }
+</style>

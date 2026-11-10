@@ -1,0 +1,389 @@
+# yaml-language-server: $schema=https://unpkg.com/@sveltia/cms@0.256.1/schema/sveltia-cms.json
+# =====================================================================
+#  Painel administrativo — Não Monogâmico (Sveltia CMS)
+#  Documentação de uso: docs/GUIA-DO-PAINEL.md
+#  As categorias abaixo precisam bater com src/data/categories.ts.
+# =====================================================================
+
+backend:
+  name: github
+  # ⚠️ Troque pelo repositório real no GitHub, no formato usuario/repositorio (ver docs/PUBLICACAO.md).
+  repo: diogoferla/naomonogamico-site
+  branch: site-novo
+  auth_methods: [oauth]
+  # Permite, ao salvar, escolher “não publicar ainda” (economiza deploys); o próximo salvamento normal publica tudo.
+  skip_ci: false
+  commit_messages:
+    create: "Painel: cria {{collection}} “{{slug}}”"
+    update: "Painel: atualiza {{collection}} “{{slug}}”"
+    delete: "Painel: exclui {{collection}} “{{slug}}”"
+    uploadMedia: "Painel: envia imagem “{{path}}”"
+    deleteMedia: "Painel: remove imagem “{{path}}”"
+
+app_title: Painel · Não Monogâmico
+logo:
+  src: /apple-touch-icon.png
+site_url: https://www.naomonogamico.com.br
+media_folder: public/images/uploads
+public_folder: /images/uploads
+slug:
+  encoding: ascii
+  clean_accents: true
+  sanitize_replacement: "-"
+
+collections:
+  # =================================================================
+  - divider: true
+
+  - name: articles
+    label: Artigos e entrevistas
+    label_singular: texto
+    description: Blog — artigos, entrevistas e textos do projeto. Aparecem em /conteudos (entrevistas também em /conversas).
+    icon: article
+    folder: src/content/articles
+    extension: md
+    format: frontmatter
+    create: true
+    delete: true
+    slug: "{{title}}"
+    identifier_field: title
+    summary: "{{title}}"
+    sortable_fields: [date, title]
+    preview_path: /conteudos/{{slug}}
+    fields:
+      - { label: Título, name: title, widget: string }
+      - label: Subtítulo / resumo
+        name: description
+        widget: text
+        maxlength: 220
+        hint: Aparece embaixo do título, nos cards e no Google. Até 220 caracteres.
+      - { label: Data de publicação, name: date, widget: datetime, type: date, format: YYYY-MM-DD, default: "{{now}}" }
+      - { label: Atualizado em, name: updated, widget: datetime, type: date, format: YYYY-MM-DD, required: false }
+      - { label: Autor(a), name: author, widget: string, default: Não Monogâmico, required: false }
+      - label: Categoria
+        name: category
+        widget: select
+        options:
+          - { label: Começando na não monogamia, value: comecando }
+          - { label: Conceitos, value: conceitos }
+          - { label: Relacionamentos, value: relacionamentos }
+          - { label: Comunicação, value: comunicacao }
+          - { label: Eventos, value: eventos }
+          - { label: Entrevistas, value: entrevistas }
+          - { label: Comunidade, value: comunidade }
+      - label: Tipo
+        name: type
+        widget: select
+        default: artigo
+        options:
+          - { label: Artigo, value: artigo }
+          - { label: Entrevista (também aparece em Conversas), value: entrevista }
+      - { label: Pessoa entrevistada, name: interviewee, widget: string, required: false, hint: "Só para entrevistas." }
+      - { label: Assuntos (tags), name: tags, widget: list, required: false, hint: "Separe por vírgula. Ex.: comunicação, ciúme" }
+      - { label: Imagem de capa, name: image, widget: image, required: false, hint: "Opcional. Sem imagem, o site gera uma capa abstrata nas cores da marca." }
+      - { label: Descrição da imagem, name: imageAlt, widget: string, required: false, hint: "Descreva a imagem para quem usa leitor de tela." }
+      - &draft
+        label: Rascunho
+        name: draft
+        widget: boolean
+        default: false
+        required: false
+        hint: Ligado = salvo no painel, mas não aparece no site.
+      - { label: Texto, name: body, widget: markdown }
+
+  - name: guides
+    label: Guias (Entenda)
+    label_singular: guia
+    description: Guias introdutórios da página Entenda.
+    icon: school
+    folder: src/content/guides
+    extension: md
+    format: frontmatter
+    create: true
+    delete: false
+    slug: "{{title}}"
+    identifier_field: title
+    sortable_fields: [order, title]
+    preview_path: /entenda/{{slug}}
+    fields:
+      - { label: Título, name: title, widget: string }
+      - { label: Resumo, name: description, widget: text, maxlength: 220, hint: "Aparece no topo do guia e no Google." }
+      - { label: Frase curta para os cards, name: short, widget: string, maxlength: 140 }
+      - { label: Ordem, name: order, widget: number, value_type: int, min: 1, hint: "Posição na lista (1 = primeiro)." }
+      - { label: Atualizado em, name: updated, widget: datetime, type: date, format: YYYY-MM-DD, default: "{{now}}" }
+      - { label: Texto, name: body, widget: markdown }
+
+  - name: faq
+    label: Perguntas frequentes
+    label_singular: pergunta
+    icon: quiz
+    folder: src/content/faq
+    extension: md
+    format: frontmatter
+    create: true
+    delete: true
+    slug: "{{question}}"
+    identifier_field: question
+    sortable_fields: [order, question]
+    fields:
+      - { label: Pergunta, name: question, widget: string }
+      - label: Grupo
+        name: group
+        widget: select
+        options:
+          - { label: Conceitos, value: conceitos }
+          - { label: Na prática, value: na-pratica }
+          - { label: Sobre o site, value: sobre-o-site }
+      - { label: Ordem, name: order, widget: number, value_type: int, min: 1 }
+      - label: Link “saiba mais”
+        name: link
+        widget: object
+        required: false
+        collapsed: true
+        fields:
+          - { label: Endereço, name: href, widget: string, required: false, hint: "Ex.: /entenda/formas-de-relacionamento" }
+          - { label: Texto do link, name: label, widget: string, required: false }
+      - *draft
+      - { label: Resposta, name: body, widget: markdown }
+
+  # =================================================================
+  - divider: true
+
+  - name: events
+    label: Eventos
+    label_singular: evento
+    description: Agenda. Eventos passam automaticamente para “Eventos passados” depois da data.
+    icon: event
+    folder: src/content/events
+    extension: md
+    format: frontmatter
+    create: true
+    delete: true
+    slug: "{{title}}"
+    identifier_field: title
+    summary: "{{title}} · {{start | date('DD/MM/YYYY')}}"
+    sortable_fields: [start, title, city]
+    preview_path: /eventos/{{slug}}
+    fields:
+      - { label: Nome do evento, name: title, widget: string }
+      - label: Início
+        name: start
+        widget: datetime
+        input_timezone: America/Sao_Paulo
+        hint: Data e horário de Brasília.
+      - label: Término
+        name: end
+        widget: datetime
+        input_timezone: America/Sao_Paulo
+        required: false
+      - label: Categoria
+        name: category
+        widget: select
+        options:
+          - { label: Festas, value: festas }
+          - { label: Encontros, value: encontros }
+          - { label: Palestras, value: palestras }
+          - { label: Workshops, value: workshops }
+          - { label: Outros, value: outros }
+      - { label: Evento online, name: online, widget: boolean, default: false, required: false }
+      - { label: Cidade, name: city, widget: string, hint: "Para eventos online, escreva “Online”. Novas cidades entram no filtro automaticamente." }
+      - { label: UF, name: state, widget: string, required: false, minlength: 2, maxlength: 2, hint: "Sigla do estado, ex. SP." }
+      - { label: Local, name: venue, widget: string, required: false }
+      - { label: Endereço, name: address, widget: string, required: false }
+      - { label: Organização, name: organizer, widget: string }
+      - { label: Resumo para os cards, name: summary, widget: text, maxlength: 220 }
+      - { label: Link oficial (ingressos/inscrição), name: url, widget: string, type: url, required: false, pattern: &link_pattern ["^https?://", "Use um link completo, começando com https://"] }
+      - { label: Instagram do evento, name: instagram, widget: string, type: url, required: false, pattern: *link_pattern, hint: "Link completo, ex.: https://www.instagram.com/perfil/" }
+      - { label: Valor, name: price, widget: string, required: false, hint: "Ex.: Gratuito, R$ 40" }
+      - { label: Imagem de capa, name: image, widget: image, required: false }
+      - { label: Descrição da imagem, name: imageAlt, widget: string, required: false }
+      - *draft
+      - &example
+        label: Conteúdo de exemplo
+        name: example
+        widget: boolean
+        default: false
+        required: false
+        hint: Marca itens demonstrativos (aparecem com o selo “Exemplo”). Para itens reais, deixe desligado.
+      - { label: Descrição completa, name: body, widget: markdown, required: false }
+
+  - name: professionals
+    label: Profissionais
+    label_singular: profissional
+    description: Diretório de profissionais. Publique apenas dados profissionais e públicos, com consentimento da pessoa.
+    icon: badge
+    folder: src/content/professionals
+    extension: md
+    format: frontmatter
+    create: true
+    delete: true
+    slug: "{{name}}"
+    identifier_field: name
+    summary: "{{name}} · {{profession}}"
+    sortable_fields: [name, category, city]
+    preview_path: /profissionais/{{slug}}
+    fields:
+      - { label: Nome profissional, name: name, widget: string }
+      - { label: Profissão, name: profession, widget: string, hint: "Ex.: Psicóloga, Advogado, Terapeuta de casal" }
+      - label: Área de atuação
+        name: category
+        widget: select
+        options:
+          - { label: Psicologia, value: psicologia }
+          - { label: Terapia, value: terapia }
+          - { label: Direito, value: direito }
+          - { label: Saúde, value: saude }
+          - { label: Educação, value: educacao }
+          - { label: Outros, value: outros }
+      - label: Atendimento
+        name: attendance
+        widget: select
+        multiple: true
+        required: false
+        options:
+          - { label: Presencial, value: presencial }
+          - { label: Online, value: online }
+      - { label: Cidade, name: city, widget: string, required: false }
+      - { label: UF, name: state, widget: string, required: false, maxlength: 2 }
+      - { label: Apresentação curta, name: description, widget: text, maxlength: 280, hint: "Aparece no card do diretório. Até 280 caracteres." }
+      - { label: Especialidades / temas, name: specialties, widget: list, required: false }
+      - { label: Registro profissional, name: registration, widget: string, required: false, hint: "Ex.: CRP 06/000000 — só se a pessoa autorizar a exibição." }
+      - { label: Instagram, name: instagram, widget: string, type: url, required: false, pattern: *link_pattern }
+      - { label: Site, name: website, widget: string, type: url, required: false, pattern: *link_pattern }
+      - { label: WhatsApp profissional, name: whatsapp, widget: string, required: false, hint: "Só número de uso profissional e público. Com DDD." }
+      - { label: E-mail profissional, name: email, widget: string, type: email, required: false }
+      - { label: Telefone profissional, name: phone, widget: string, required: false }
+      - label: Como o perfil chegou ao site
+        name: source
+        widget: select
+        required: false
+        hint: “Por indicação” mostra o aviso “Perfil incluído a partir de indicação” (não é certificação).
+        options:
+          - { label: Cadastro feito pelo próprio profissional, value: proprio }
+          - { label: Por indicação de terceiros, value: indicacao }
+      - *draft
+      - *example
+      - { label: Apresentação completa (opcional), name: body, widget: markdown, required: false }
+
+  - name: initiatives
+    label: Iniciativas
+    label_singular: iniciativa
+    description: Festas, comunidades, projetos, organizações, criadores de conteúdo e outras iniciativas.
+    icon: diversity_3
+    folder: src/content/initiatives
+    extension: md
+    format: frontmatter
+    create: true
+    delete: true
+    slug: "{{name}}"
+    identifier_field: name
+    sortable_fields: [name, category]
+    preview_path: /iniciativas/{{slug}}
+    fields:
+      - { label: Nome, name: name, widget: string }
+      - label: Tipo
+        name: category
+        widget: select
+        options:
+          - { label: Festas, value: festas }
+          - { label: Comunidades, value: comunidades }
+          - { label: Eventos e encontros, value: eventos }
+          - { label: Projetos, value: projetos }
+          - { label: Criadores de conteúdo, value: criadores }
+          - { label: Organizações, value: organizacoes }
+          - { label: Outros, value: outros }
+      - { label: Descrição curta, name: description, widget: text, maxlength: 280 }
+      - { label: Cidade ou abrangência, name: region, widget: string, required: false, hint: "Ex.: São Paulo · SP, Nacional, Online" }
+      - { label: Instagram, name: instagram, widget: string, type: url, required: false, pattern: *link_pattern }
+      - { label: Site, name: website, widget: string, type: url, required: false, pattern: *link_pattern }
+      - { label: Outro link externo, name: link, widget: string, type: url, required: false, pattern: *link_pattern }
+      - { label: Imagem ou identidade visual, name: image, widget: image, required: false }
+      - { label: Descrição da imagem, name: imageAlt, widget: string, required: false }
+      - label: Informações confirmadas
+        name: verified
+        widget: boolean
+        default: false
+        required: false
+        hint: Desligado = aparece o selo “Informações a confirmar”.
+      - *draft
+      - *example
+      - { label: Texto completo (opcional), name: body, widget: markdown, required: false }
+
+  # =================================================================
+  - divider: true
+
+  - name: pages
+    label: Textos das páginas
+    label_singular: página
+    description: Títulos, descrições e textos institucionais. Use *asteriscos* para destacar um trecho do título com o degradê da marca.
+    icon: web
+    files:
+      - name: inicio
+        label: Início
+        file: src/content/pages/inicio.md
+        fields:
+          - &seo_title { label: Título para o Google e abas, name: seo_title, widget: string }
+          - &seo_description { label: Descrição para o Google e compartilhamentos, name: seo_description, widget: text, maxlength: 220 }
+          - &eyebrow { label: Etiqueta acima do título, name: eyebrow, widget: string, required: false }
+          - { label: Título principal, name: title, widget: text, hint: "Quebra de linha = nova linha. *Asteriscos* = destaque colorido." }
+          - &lede { label: Texto de apoio, name: lede, widget: text, required: false }
+          - { label: "“Portas de entrada”: título", name: journey_title, widget: string, required: false }
+          - { label: "“Portas de entrada”: texto", name: journey_text, widget: string, required: false }
+          - { label: "“O que é”: etiqueta", name: what_eyebrow, widget: string, required: false }
+          - { label: "“O que é”: título", name: what_title, widget: string, required: false }
+          - { label: "“O que é”: frase em destaque", name: what_highlight, widget: text, required: false }
+          - { label: "“O que é”: texto", name: what_text, widget: text, required: false }
+          - { label: Valores, name: values, widget: list, required: false, hint: "Ex.: Respeito, Consentimento, Autonomia" }
+      - name: sobre
+        label: Sobre
+        file: src/content/pages/sobre.md
+        fields:
+          - *seo_title
+          - *seo_description
+          - *eyebrow
+          - &title { label: Título, name: title, widget: string, hint: "*Asteriscos* = destaque colorido." }
+          - *lede
+          - label: Resumo lateral
+            name: facts
+            widget: list
+            required: false
+            summary: "{{label}}: {{value}}"
+            fields:
+              - { label: Rótulo, name: label, widget: string }
+              - { label: Texto, name: value, widget: string }
+          - { label: Texto da página, name: body, widget: markdown }
+      - name: privacidade
+        label: Política de privacidade
+        file: src/content/pages/privacidade.md
+        fields:
+          - *seo_title
+          - *seo_description
+          - *eyebrow
+          - *title
+          - *lede
+          - { label: Última atualização, name: updated, widget: datetime, type: date, format: YYYY-MM-DD }
+          - { label: Texto da política, name: body, widget: markdown }
+      - { name: entenda, label: Entenda (cabeçalho), file: src/content/pages/entenda.md, fields: [*seo_title, *seo_description, *eyebrow, *title, *lede] }
+      - { name: eventos, label: Eventos (cabeçalho), file: src/content/pages/eventos.md, fields: [*seo_title, *seo_description, *eyebrow, *title, *lede] }
+      - { name: conteudos, label: Conteúdos (cabeçalho), file: src/content/pages/conteudos.md, fields: [*seo_title, *seo_description, *eyebrow, *title, *lede] }
+      - { name: conversas, label: Conversas (cabeçalho), file: src/content/pages/conversas.md, fields: [*seo_title, *seo_description, *eyebrow, *title, *lede] }
+      - { name: profissionais, label: Profissionais (cabeçalho), file: src/content/pages/profissionais.md, fields: [*seo_title, *seo_description, *eyebrow, *title, *lede] }
+      - { name: iniciativas, label: Iniciativas (cabeçalho), file: src/content/pages/iniciativas.md, fields: [*seo_title, *seo_description, *eyebrow, *title, *lede] }
+      - { name: faq, label: Perguntas frequentes (cabeçalho), file: src/content/pages/faq.md, fields: [*seo_title, *seo_description, *eyebrow, *title, *lede] }
+      - { name: contribua, label: Contribua (cabeçalho), file: src/content/pages/contribua.md, fields: [*seo_title, *seo_description, *eyebrow, *title, *lede] }
+
+  - name: settings
+    label: Configurações
+    icon: settings
+    files:
+      - name: settings
+        label: Contatos e configurações gerais
+        file: src/data/settings.json
+        format: json
+        fields:
+          - { label: Instagram oficial do projeto, name: instagram, widget: string, required: false, hint: "@perfil ou link. Vazio = não aparece no site." }
+          - { label: E-mail de contato, name: contact_email, widget: string, type: email, required: false, hint: "Aparece no rodapé. Vazio = não aparece." }
+          - { label: WhatsApp de contato, name: whatsapp, widget: string, required: false, hint: "Com DDD. Vazio = não aparece." }
+          - { label: Responsável pelos dados (Política de Privacidade), name: privacy_controller, widget: string, required: false, hint: "Nome ou razão social de quem responde pelo tratamento de dados." }
+          - { label: E-mail para assuntos de privacidade, name: privacy_email, widget: string, type: email, required: false, hint: "Se vazio, usa o e-mail de contato." }
+          - { label: Mostrar conteúdo de exemplo, name: show_examples, widget: boolean, default: true, hint: "Desligue antes do lançamento — esconde todos os itens marcados como exemplo." }

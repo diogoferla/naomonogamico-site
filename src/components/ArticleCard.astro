@@ -1,0 +1,32 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Cover from './Cover.astro';
+import { ARTICLE_CATEGORIES, findCategory } from '../data/categories';
+import { fmt, readingTime } from '../lib/content';
+
+interface Props { article: CollectionEntry<'articles'>; large?: boolean }
+const { article, large = false } = Astro.props;
+const d = article.data;
+const cat = findCategory(ARTICLE_CATEGORIES, d.category);
+---
+<article class:list={['card', 'article-card', `tone-${cat.tone}`, { large }]} data-article data-category={d.category}>
+  <Cover seed={article.id} tone={cat.tone} image={d.image} alt={d.imageAlt ?? ''} ratio={large ? '16 / 9' : '16 / 10'} />
+  <div class="card-body">
+    <div class="card-meta">
+      <span class="tag">{d.type === 'entrevista' ? 'Entrevista' : cat.label}</span>
+      {d.example && <span class="tag tag-example">Exemplo</span>}
+    </div>
+    <h3><a href={`/conteudos/${article.id}`}>{d.title}</a></h3>
+    <p class="desc">{d.description}</p>
+    <p class="meta muted">
+      <time datetime={d.date.toISOString()}>{fmt.long(d.date)}</time> · {readingTime(article.body)} min de leitura
+    </p>
+  </div>
+</article>
+
+<style>
+  .article-card h3 { font-size: var(--step-1); }
+  .article-card.large h3 { font-size: var(--step-2); }
+  .desc { color: var(--ink-2); }
+  .meta { font-size: var(--step--1); margin-top: auto; }
+</style>

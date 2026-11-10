@@ -1,0 +1,234 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import EventCard from '../../components/EventCard.astro';
+import EmptyState from '../../components/EmptyState.astro';
+import ContributeBand from '../../components/ContributeBand.astro';
+import { getEvents, splitEvents, slugify, fmt } from '../../lib/content';
+import { EVENT_CATEGORIES } from '../../data/categories';
+import { getPage, emphasize } from '../../lib/content';
+const page = (await getPage('eventos')).data;
+
+const events = await getEvents();
+const { upcoming, past } = splitEvents(events);
+
+const cities = [...new Map(events.filter((e) => !e.data.online).map((e) => [slugify(e.data.city), e.data.city])).entries()]
+  .sort((a, b) => a[1].localeCompare(b[1], 'pt-BR'));
+const hasOnline = events.some((e) => e.data.online);
+const months = [...new Map(events.map((e) => {
+  const key = fmt.monthKey(e.data.start);
+  const label = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' }).format(e.data.start);
+  return [key, label];
+})).entries()].sort((a, b) => a[0].localeCompare(b[0]));
+
+const crumbs = [{ name: 'Eventos', href: '/eventos' }];
+const description = page.seo_description;
+---
+<BaseLayout title={page.seo_title} description={page.seo_description} breadcrumbs={crumbs}>
+  <PageHeader
+    eyebrow={page.eyebrow}
+    title={emphasize(page.title)}
+    lede={page.lede}
+    breadcrumbs={crumbs}
+    tone="sun"
+  >
+    <p><a class="link-arrow" href="/contribua?tipo=evento#formulario">Organiza ou conhece um evento? Indique <span aria-hidden="true">→</span></a></p>
+  </PageHeader>
+
+  <section class="section" aria-label="Lista de eventos">
+    <div class="wrap">
+      <div class="filters" role="search" data-filters aria-label="Filtrar eventos" hidden={events.length === 0}>
+        <fieldset class="when">
+          <legend class="sr-only">Quando</legend>
+          <div class="chips" role="group" aria-label="Quando">
+            <button type="button" class="chip" data-when="upcoming" aria-pressed="true">Próximos</button>
+            <button type="button" class="chip" data-when="past" aria-pressed="false">Passados</button>
+            <button type="button" class="chip" data-when="all" aria-pressed="false">Todos</button>
+          </div>
+        </fieldset>
+        <div class="selects">
+          <div class="field">
+            <label for="f-category">Categoria</label>
+            <select id="f-category" class="select" data-filter="category">
+              <option value="">Todas</option>
+              {EVENT_CATEGORIES.map((c) => <option value={c.id}>{c.label}</option>)}
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-city">Cidade</label>
+            <select id="f-city" class="select" data-filter="city">
+              <option value="">Todas</option>
+              {hasOnline && <option value="online">Online</option>}
+              {cities.map(([id, label]) => <option value={id}>{label}</option>)}
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-sort">Ordenar por</label>
+            <select id="f-sort" class="select" data-sort>
+              <option value="date">Data</option>
+              <option value="name">Nome do evento</option>
+              <option value="city">Cidade</option>
+              <option value="category">Categoria</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-month">Mês</label>
+            <select id="f-month" class="select" data-filter="month">
+              <option value="">Todos</option>
+              {months.map(([id, label]) => <option value={id}>{label}</option>)}
+            </select>
+          </div>
+        </div>
+        <div class="status-row">
+          <p class="count" aria-live="polite" data-count></p>
+          <button type="button" class="reset" data-reset hidden>Limpar filtros</button>
+        </div>
+      </div>
+
+      <div class="lists">
+        <section aria-labelledby="h-upcoming" data-group="upcoming">
+          <h2 id="h-upcoming" class="group-title">Próximos eventos</h2>
+          <div class="grid" style="--min: 300px" data-list="upcoming">
+            {upcoming.map((e) => <EventCard event={e} />)}
+          </div>
+          <EmptyState
+            title={events.length ? 'Nenhum evento encontrado.' : 'A agenda está sendo montada.'}
+            text={events.length
+              ? 'Não há próximos eventos com esses filtros. Tente outra cidade, categoria ou mês — ou indique um evento.'
+              : 'Ainda não há eventos cadastrados. Organiza ou conhece algum? Indique e ajude a agenda a crescer.'}
+            ctaHref="/contribua?tipo=evento#formulario"
+            ctaLabel="Indicar um evento"
+            hidden={upcoming.length > 0}
+          />
+        </section>
+
+        <section aria-labelledby="h-past" data-group="past" class="past-group">
+          <h2 id="h-past" class="group-title">Eventos passados</h2>
+          <div class="grid" style="--min: 300px" data-list="past">
+            {past.map((e) => <EventCard event={e} />)}
+          </div>
+          <EmptyState title="Nenhum evento passado com esses filtros." hidden={past.length > 0} />
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <ContributeBand
+    title="Organiza um evento?"
+    text="Se o seu evento é aberto a pessoas não monogâmicas ou discute o tema, envie as informações. Tudo é revisado antes de ser publicado."
+    type="evento"
+    label="Indicar um evento"
+  />
+</BaseLayout>
+
+<script>
+  import { markPast } from '../../scripts/events';
+
+  const form = document.querySelector<HTMLElement>('[data-filters]')!;
+  const lists = {
+    upcoming: document.querySelector<HTMLElement>('[data-list="upcoming"]')!,
+    past: document.querySelector<HTMLElement>('[data-list="past"]')!,
+  };
+  const groups = document.querySelectorAll<HTMLElement>('[data-group]');
+  const whenBtns = form.querySelectorAll<HTMLButtonElement>('[data-when]');
+  const selects = form.querySelectorAll<HTMLSelectElement>('[data-filter]');
+  const countEl = form.querySelector<HTMLElement>('[data-count]')!;
+  const resetBtn = form.querySelector<HTMLButtonElement>('[data-reset]')!;
+  const sortSel = form.querySelector<HTMLSelectElement>('[data-sort]')!;
+  const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
+
+  function sortLists() {
+    const key = sortSel.value;
+    (['upcoming', 'past'] as const).forEach((name) => {
+      const list = lists[name];
+      const cards = [...list.querySelectorAll<HTMLElement>('[data-event]')];
+      const byDate = (a: HTMLElement, b: HTMLElement) =>
+        (Date.parse(a.dataset.start!) - Date.parse(b.dataset.start!)) * (name === 'past' ? -1 : 1);
+      cards.sort((a, b) => {
+        if (key === 'date') return byDate(a, b);
+        const field = key === 'name' ? 'name' : key === 'city' ? 'city' : 'category';
+        return collator.compare(a.dataset[field] ?? '', b.dataset[field] ?? '') || byDate(a, b);
+      });
+      cards.forEach((c) => list.appendChild(c));
+    });
+  }
+
+  // 1. Reavalia próximos/passados com a data atual do navegador
+  markPast();
+  lists.upcoming.querySelectorAll<HTMLElement>('[data-event][data-past="true"]').forEach((el) => lists.past.prepend(el));
+
+  // 2. Estado inicial a partir da URL (?quando=&categoria=&cidade=&mes=)
+  const params = new URLSearchParams(location.search);
+  const keyMap: Record<string, string> = { category: 'categoria', city: 'cidade', month: 'mes' };
+  if (['name', 'city', 'category'].includes(params.get('ordem') ?? '')) sortSel.value = params.get('ordem')!;
+  let when = ['upcoming', 'past', 'all'].includes(params.get('quando') ?? '') ? params.get('quando')! : 'upcoming';
+  selects.forEach((s) => {
+    const v = params.get(keyMap[s.dataset.filter!]);
+    if (v && [...s.options].some((o) => o.value === v)) s.value = v;
+  });
+
+  function apply() {
+    const f: Record<string, string> = {};
+    selects.forEach((s) => (f[s.dataset.filter!] = s.value));
+    let total = 0;
+
+    groups.forEach((g) => {
+      const name = g.dataset.group!;
+      const show = when === 'all' || when === name;
+      g.hidden = !show;
+      let visible = 0;
+      g.querySelectorAll<HTMLElement>('[data-event]').forEach((card) => {
+        const ok =
+          (!f.category || card.dataset.category === f.category) &&
+          (!f.city || card.dataset.city === f.city) &&
+          (!f.month || card.dataset.month === f.month);
+        card.hidden = !ok;
+        if (ok) visible++;
+      });
+      const empty = g.querySelector<HTMLElement>('.empty');
+      if (empty) empty.hidden = visible > 0;
+      if (show) total += visible;
+    });
+
+    whenBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.when === when)));
+    countEl.textContent = total === 1 ? '1 evento' : `${total} eventos`;
+    const active = Object.values(f).some(Boolean) || when !== 'upcoming' || sortSel.value !== 'date';
+    resetBtn.hidden = !active;
+
+    const q = new URLSearchParams();
+    if (when !== 'upcoming') q.set('quando', when);
+    if (sortSel.value !== 'date') q.set('ordem', sortSel.value);
+    Object.entries(f).forEach(([k, v]) => v && q.set(keyMap[k], v));
+    history.replaceState(null, '', q.toString() ? `?${q}` : location.pathname);
+  }
+
+  whenBtns.forEach((b) => b.addEventListener('click', () => { when = b.dataset.when!; apply(); }));
+  selects.forEach((s) => s.addEventListener('change', apply));
+  sortSel.addEventListener('change', () => { sortLists(); apply(); });
+  resetBtn.addEventListener('click', () => {
+    when = 'upcoming'; selects.forEach((s) => (s.value = '')); sortSel.value = 'date'; sortLists(); apply();
+  });
+  sortLists();
+  apply();
+</script>
+
+<style>
+  .filters {
+    display: grid; gap: var(--s-4);
+    padding: var(--s-5); margin-bottom: var(--s-7);
+    background: var(--card); border: 1px solid var(--line-soft); border-radius: var(--radius);
+  }
+  fieldset { border: 0; padding: 0; min-width: 0; }
+  .selects { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr)); }
+  .status-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); min-height: 28px; }
+  .count { font-size: var(--step--1); color: var(--ink-3); font-weight: 600; }
+  .reset { background: none; border: 0; padding: 0.4em 0; text-decoration: underline; text-underline-offset: 0.2em; font-size: var(--step--1); font-weight: 600; }
+  .lists { display: flex; flex-direction: column; gap: var(--s-8); }
+  .group-title { font-size: var(--step-2); margin-bottom: var(--s-5); }
+  .lists section[data-group] { display: flex; flex-direction: column; }
+  .lists .grid:empty { display: none; }
+  @media (min-width: 900px) {
+    .filters { grid-template-columns: auto 1fr; align-items: end; }
+    .status-row { grid-column: 1 / -1; }
+  }
+</style>

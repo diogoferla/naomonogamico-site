@@ -1,0 +1,303 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import EventCard from '../components/EventCard.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import EmptyState from '../components/EmptyState.astro';
+import ContributeBand from '../components/ContributeBand.astro';
+import { getEvents, splitEvents, getArticles, getGuides, getInitiatives, getProfessionals, getPage, emphasize } from '../lib/content';
+import { SITE } from '../config/site';
+
+const page = (await getPage('inicio')).data;
+const events = await getEvents();
+const { upcoming } = splitEvents(events);
+const nextEvents = upcoming.slice(0, 3);
+const articles = (await getArticles()).slice(0, 3);
+const guides = await getGuides();
+const initiativesCount = (await getInitiatives()).filter((i) => !i.data.example).length;
+const professionalsCount = (await getProfessionals()).filter((i) => !i.data.example).length;
+
+const journey = [
+  { n: '01', title: 'Entender o conceito', text: 'O que é, o que não é e de onde partir.', href: '/entenda/o-que-e-nao-monogamia', tone: 'coral' },
+  { n: '02', title: 'Conhecer possibilidades', text: 'Relacionamento aberto, poliamor e outros arranjos.', href: '/entenda/formas-de-relacionamento', tone: 'violet' },
+  { n: '03', title: 'Ler e se aprofundar', text: 'Artigos, guias e conversas.', href: '/conteudos', tone: 'teal' },
+  { n: '04', title: 'Ir a eventos', text: 'Festas, encontros, palestras e workshops.', href: '/eventos', tone: 'sun' },
+  { n: '05', title: 'Encontrar comunidade', text: 'Projetos, festas e grupos que já existem.', href: '/iniciativas', tone: 'rose' },
+  { n: '06', title: 'Buscar apoio profissional', text: 'Quem atende pessoas não monogâmicas.', href: '/profissionais', tone: 'teal' },
+];
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE.name,
+    url: SITE.url,
+    description: page.seo_description,
+    inLanguage: 'pt-BR',
+  },
+];
+---
+<BaseLayout title={page.seo_title} description={page.seo_description} jsonLd={jsonLd}>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        {page.eyebrow && <p class="eyebrow">{page.eyebrow}</p>}
+        <h1 class="display" set:html={emphasize(page.title)} />
+        {page.lede && <p class="lede">{page.lede}</p>}
+        <div class="flow-row">
+          <a class="btn" href="/eventos">Explorar eventos <span aria-hidden="true">→</span></a>
+          <a class="btn btn-ghost" href="/entenda">Entender a não monogamia</a>
+        </div>
+      </div>
+
+      <figure class="hero-art">
+        <img
+          src="/brand/logo-badge.webp"
+          width="720" height="720"
+          alt="Logo Não Monogamia: três figuras com corpos em forma de coração, entrelaçadas. Mais amor, mais liberdade, mais conexões. Respeito, consentimento, autonomia."
+          fetchpriority="high"
+          decoding="async"
+        />
+      </figure>
+    </div>
+  </section>
+
+  <!-- JORNADA -->
+  <section class="journey" aria-labelledby="journey-title">
+    <div class="wrap">
+      <div class="journey-head">
+        <h2 id="journey-title" class="journey-title" set:html={emphasize(page.journey_title ?? 'Por onde começar?')} />
+        {page.journey_text && <p class="muted">{page.journey_text}</p>}
+      </div>
+      <ol role="list" class="journey-list">
+        {journey.map((s) => (
+          <li class={`tone-${s.tone}`}>
+            <a href={s.href}>
+              <span class="num">{s.n}</span>
+              <span class="jt">{s.title}</span>
+              <span class="jd">{s.text}</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- O QUE É -->
+  <section class="section what" aria-labelledby="what-title">
+    <div class="wrap what-grid">
+      <div class="stack">
+        {page.what_eyebrow && <p class="eyebrow" style="--dot: var(--violet)">{page.what_eyebrow}</p>}
+        <h2 id="what-title" set:html={emphasize(page.what_title ?? 'O que é não monogamia?')} />
+      </div>
+      <div class="stack what-text">
+        {page.what_highlight && <p class="big" set:html={emphasize(page.what_highlight)} />}
+        {page.what_text && <p>{page.what_text}</p>}
+        {page.values.length > 0 && (
+          <ul role="list" class="pillars">
+            {page.values.map((v, i) => (
+              <li><span class="dot" style={`background:var(--${['coral', 'violet', 'teal', 'sun', 'rose'][i % 5]})`}></span>{v}</li>
+            ))}
+          </ul>
+        )}
+        <p><a class="link-arrow" href="/entenda/o-que-e-nao-monogamia">Quero entender melhor <span aria-hidden="true">→</span></a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- POR ONDE COMEÇAR -->
+  <section class="section band" aria-labelledby="start-title">
+    <div class="wrap stack" style="--stack: var(--s-6)">
+      <div class="section-head">
+        <div class="stack" style="--stack: var(--s-3)">
+          <p class="eyebrow" style="--dot: var(--teal)">Guias introdutórios</p>
+          <h2 id="start-title">Por onde começar?</h2>
+        </div>
+        <a class="link-arrow" href="/entenda">Ver todos os guias <span aria-hidden="true">→</span></a>
+      </div>
+      <ol role="list" class="grid guides" style="--min: 260px">
+        {guides.map((g, i) => (
+          <li class="card guide-card">
+            <div class="card-body">
+              <span class="gnum">{String(i + 1).padStart(2, '0')}</span>
+              <h3><a href={`/entenda/${g.id}`}>{g.data.title}</a></h3>
+              <p class="muted">{g.data.short}</p>
+            </div>
+          </li>
+        ))}
+        <li class="card guide-card faq-card">
+          <div class="card-body">
+            <span class="gnum">?</span>
+            <h3><a href="/faq">Perguntas frequentes</a></h3>
+            <p class="muted">Respostas curtas para as dúvidas mais comuns.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- EVENTOS -->
+  <section class="section" aria-labelledby="events-title" data-home-events>
+    <div class="wrap stack" style="--stack: var(--s-6)">
+      <div class="section-head">
+        <div class="stack" style="--stack: var(--s-3)">
+          <p class="eyebrow" style="--dot: var(--sun)">Agenda</p>
+          <h2 id="events-title">Próximos eventos</h2>
+        </div>
+        <a class="link-arrow" href="/eventos">Ver agenda completa <span aria-hidden="true">→</span></a>
+      </div>
+      {nextEvents.length > 0 && (
+        <div class="grid" style="--min: 300px">
+          {nextEvents.map((e) => <EventCard event={e} />)}
+        </div>
+      )}
+      <EmptyState
+        id="home-events-empty"
+        hidden={nextEvents.length > 0}
+        title="A agenda está sendo montada."
+        text="Ainda não há eventos futuros cadastrados. Conhece algum? Ajude a agenda a crescer."
+        ctaHref="/contribua?tipo=evento#formulario"
+        ctaLabel="Indicar um evento"
+      />
+    </div>
+  </section>
+
+  <!-- DIRETÓRIOS -->
+  <section class="section band-ink dirs" aria-label="Diretórios">
+    <div class="wrap dirs-grid">
+      <a href="/iniciativas" class="dir">
+        <p class="eyebrow" style="--dot: var(--rose)">Diretório</p>
+        <h2>Iniciativas</h2>
+        <p class="muted">Festas, comunidades, projetos e criadores de conteúdo ligados à não monogamia.</p>
+        <p class="count">{initiativesCount > 0 ? `${initiativesCount} ${initiativesCount === 1 ? 'iniciativa' : 'iniciativas'} no diretório` : 'Diretório em construção'}</p>
+        <span class="go" aria-hidden="true">→</span>
+      </a>
+      <a href="/profissionais" class="dir">
+        <p class="eyebrow" style="--dot: var(--teal)">Diretório</p>
+        <h2>Profissionais</h2>
+        <p class="muted">Psicologia, terapia, direito, saúde e educação — com quem entende essas relações.</p>
+        <p class="count">{professionalsCount > 0 ? `${professionalsCount} ${professionalsCount === 1 ? 'profissional' : 'profissionais'}` : 'Diretório em construção'}</p>
+        <span class="go" aria-hidden="true">→</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- CONTEÚDOS -->
+  {articles.length > 0 && (
+    <section class="section" aria-labelledby="posts-title">
+      <div class="wrap stack" style="--stack: var(--s-6)">
+        <div class="section-head">
+          <div class="stack" style="--stack: var(--s-3)">
+            <p class="eyebrow" style="--dot: var(--coral)">Conteúdos</p>
+            <h2 id="posts-title">Para ler com calma</h2>
+          </div>
+          <a class="link-arrow" href="/conteudos">Todos os conteúdos <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="grid" style="--min: 300px">
+          {articles.map((a) => <ArticleCard article={a} />)}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <ContributeBand />
+</BaseLayout>
+
+<script>
+  import { markPast } from '../scripts/events';
+  markPast();
+  const section = document.querySelector('[data-home-events]');
+  if (section) {
+    section.querySelectorAll<HTMLElement>('[data-event][data-past="true"]').forEach((el) => el.remove());
+    if (!section.querySelector('[data-event]')) {
+      document.getElementById('home-events-empty')?.removeAttribute('hidden');
+    }
+  }
+</script>
+
+<style>
+  /* Hero */
+  .hero { padding-block: clamp(2rem, 1rem + 5vw, 5rem) clamp(2.5rem, 1rem + 5vw, 5rem); overflow: hidden; }
+  .hero-grid { display: grid; gap: var(--s-6); align-items: center; }
+  .hero-copy { display: flex; flex-direction: column; gap: var(--s-5); }
+  .hero h1 { font-size: var(--step-5); line-height: 0.98; letter-spacing: -0.03em; }
+  .hero .lede { max-width: 34ch; }
+  .hero-art { position: relative; margin: 0; max-width: min(520px, 88vw); justify-self: center; width: 100%; }
+  @media (max-width: 899px) { .hero-art { max-width: 340px; } }
+  .hero-art img { width: 100%; height: auto; filter: drop-shadow(0 0 60px rgba(139, 63, 209, 0.28)); }
+  .hero { position: relative; }
+  .hero::before {
+    content: ''; position: absolute; inset: -20% -10% auto auto; width: 70vw; height: 70vw; max-width: 900px; max-height: 900px;
+    background: radial-gradient(closest-side, rgba(139, 63, 209, 0.22), rgba(244, 71, 95, 0.08) 55%, transparent 75%);
+    pointer-events: none;
+  }
+  .hero-grid { position: relative; }
+  @media (min-width: 900px) {
+    .hero-grid { grid-template-columns: 1.1fr 0.9fr; }
+  }
+
+  /* Jornada */
+  .journey { padding-bottom: var(--s-6); }
+  .journey-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: var(--s-3); margin-bottom: var(--s-5); padding-top: var(--s-6); border-top: 1px solid var(--line); }
+  .journey-title { font-size: var(--step-2); max-width: 26ch; }
+  .journey-list {
+    display: grid; gap: var(--s-3);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr));
+    counter-reset: j;
+  }
+  .journey-list a {
+    position: relative; display: flex; flex-direction: column; gap: var(--s-2); height: 100%;
+    padding: var(--s-4) var(--s-4) var(--s-6); border-radius: var(--radius);
+    background: var(--card); border: 1px solid var(--line-soft); text-decoration: none;
+    transition: background-color 0.2s, transform 0.2s var(--ease), border-color 0.2s;
+  }
+  .journey-list a:hover { background: var(--tag-bg); border-color: var(--tone); transform: translateY(-3px); }
+  .num { font-family: var(--font-display); font-size: 1.1rem; color: var(--tone-ink); font-weight: 700; }
+  .jt { font-weight: 700; line-height: 1.25; }
+  .jd { font-size: var(--step--1); color: var(--ink-2); }
+  .arrow { position: absolute; right: var(--s-4); bottom: var(--s-3); color: var(--tone-ink); font-weight: 700; transition: transform 0.2s var(--ease); }
+  .journey-list a:hover .arrow { transform: translateX(4px); }
+  @media (max-width: 560px) {
+    .journey-list { grid-template-columns: 1fr; }
+    .journey-list a { display: grid; grid-template-columns: 2.5rem 1fr; column-gap: var(--s-2); padding: var(--s-4); padding-right: var(--s-7); }
+    .num { grid-row: span 2; }
+    .arrow { top: 50%; bottom: auto; transform: translateY(-50%); }
+    .journey-list a:hover .arrow { transform: translate(4px, -50%); }
+  }
+
+  /* O que é */
+  .what-grid { display: grid; gap: var(--s-6); }
+  .what-text { --stack: var(--s-5); max-width: 40rem; }
+  .big { font-family: var(--font-display); font-weight: 500; font-size: var(--step-2); line-height: 1.35; }
+  .big em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .pillars { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); font-weight: 600; }
+  .pillars li { display: flex; align-items: center; gap: 0.5em; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  @media (min-width: 900px) { .what-grid { grid-template-columns: 0.8fr 1.2fr; } }
+
+  /* Cabeçalho de seção */
+  .section-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: var(--s-4); }
+
+  /* Guias */
+  .guide-card .card-body { gap: var(--s-2); }
+  .gnum { font-family: var(--font-display); font-weight: 700; font-size: var(--step-3); line-height: 1; margin-bottom: var(--s-3); background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; width: fit-content; }
+  .faq-card { background: var(--grad-soft), var(--card); border-color: var(--line); }
+
+  /* Diretórios */
+  .dirs-grid { display: grid; gap: var(--s-4); }
+  .dir {
+    position: relative; display: flex; flex-direction: column; gap: var(--s-3);
+    padding: clamp(1.5rem, 1rem + 3vw, 3rem); border-radius: var(--radius-l);
+    border: 1px solid var(--line); text-decoration: none; color: var(--ink); background: var(--paper-2);
+    transition: background-color 0.25s, border-color 0.25s;
+  }
+  .dir:hover { background: linear-gradient(var(--paper-3), var(--paper-3)) padding-box, var(--grad) border-box; border-color: transparent; }
+  .dir .eyebrow { color: var(--ink-2); }
+  .dir h2 { font-size: var(--step-4); }
+  .dir .muted { max-width: 36ch; }
+  .count { font-size: var(--step--1); color: var(--teal-ink); font-weight: 600; margin-top: var(--s-4); }
+  .go { position: absolute; right: clamp(1.5rem, 1rem + 3vw, 3rem); top: clamp(1.5rem, 1rem + 3vw, 3rem); font-size: var(--step-3); transition: transform 0.25s var(--ease); }
+  .dir:hover .go { transform: translateX(6px); }
+  @media (min-width: 800px) { .dirs-grid { grid-template-columns: 1fr 1fr; } }
+</style>

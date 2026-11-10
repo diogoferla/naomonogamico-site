@@ -1,0 +1,173 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Cover from '../../components/Cover.astro';
+import EventCard from '../../components/EventCard.astro';
+import ShareButtons from '../../components/ShareButtons.astro';
+import { getEvents, splitEvents, fmt, absoluteUrl } from '../../lib/content';
+import { EVENT_CATEGORIES, findCategory } from '../../data/categories';
+
+export async function getStaticPaths() {
+  const events = await getEvents();
+  return events.map((event) => ({ params: { slug: event.id }, props: { event, all: events } }));
+}
+
+const { event, all } = Astro.props;
+const { Content } = await render(event);
+const d = event.data;
+const cat = findCategory(EVENT_CATEGORIES, d.category);
+const end = d.end ?? d.start;
+const sameDay = fmt.long(d.start) === fmt.long(end);
+const place = d.online ? 'Online' : [d.venue, d.address, `${d.city}${d.state ? ` · ${d.state}` : ''}`].filter(Boolean).join(' — ');
+const others = splitEvents(all).upcoming.filter((e) => e.id !== event.id).slice(0, 3);
+
+const gcalFmt = (x: Date) => x.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+const gcal = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(d.title)}&dates=${gcalFmt(d.start)}/${gcalFmt(end)}&details=${encodeURIComponent(`${d.summary}\n\n${absoluteUrl(`/eventos/${event.id}`)}`)}&location=${encodeURIComponent(place)}`;
+
+const crumbs = [{ name: 'Eventos', href: '/eventos' }, { name: d.title, href: `/eventos/${event.id}` }];
+
+// Dados estruturados apenas para eventos reais (nunca para exemplos)
+const jsonLd = d.example ? [] : [{
+  '@context': 'https://schema.org',
+  '@type': 'Event',
+  name: d.title,
+  description: d.summary,
+  startDate: d.start.toISOString(),
+  endDate: end.toISOString(),
+  eventStatus: 'https://schema.org/EventScheduled',
+  eventAttendanceMode: d.online ? 'https://schema.org/OnlineEventAttendanceMode' : 'https://schema.org/OfflineEventAttendanceMode',
+  location: d.online
+    ? { '@type': 'VirtualLocation', url: d.url ?? absoluteUrl(`/eventos/${event.id}`) }
+    : {
+        '@type': 'Place',
+        name: d.venue ?? d.city,
+        address: { '@type': 'PostalAddress', streetAddress: d.address, addressLocality: d.city, addressRegion: d.state, addressCountry: 'BR' },
+      },
+  organizer: { '@type': 'Organization', name: d.organizer, url: d.url ?? d.instagram },
+  image: d.image ? [absoluteUrl(d.image)] : undefined,
+  url: absoluteUrl(`/eventos/${event.id}`),
+}];
+---
+<BaseLayout
+  title={d.title}
+  description={d.summary}
+  image={d.image}
+  imageAlt={d.imageAlt}
+  breadcrumbs={crumbs}
+  noindex={d.example}
+  jsonLd={jsonLd}
+>
+  <article class={`tone-${cat.tone}`} data-event data-start={d.start.toISOString()} data-end={end.toISOString()}>
+    <header class="ev-head">
+      <div class="wrap stack" style="--stack: var(--s-4)">
+        <nav aria-label="Você está em" class="crumbs">
+          <a href="/">Início</a> <span aria-hidden="true">/</span> <a href="/eventos">Eventos</a>
+        </nav>
+        <div class="card-meta">
+          <span class="tag">{cat.label}</span>
+          {d.example && <span class="tag tag-example">Exemplo — não é um evento real</span>}
+          <span class="tag tag-outline past-flag" hidden>Este evento já aconteceu</span>
+        </div>
+        <h1>{d.title}</h1>
+        <p class="lede">{d.summary}</p>
+      </div>
+    </header>
+
+    <div class="wrap ev-grid">
+      <div class="ev-main">
+        <Cover seed={event.id} tone={cat.tone} image={d.image} alt={d.imageAlt ?? ''} ratio="16 / 9" eager class="ev-cover" />
+        <div class="prose">
+          <Content />
+        </div>
+        <ShareButtons title={d.title} label="Compartilhar este evento" />
+      </div>
+
+      <aside class="ev-info" aria-label="Informações do evento">
+        <dl>
+          <div>
+            <dt>Data</dt>
+            <dd>
+              <time datetime={d.start.toISOString()}>{fmt.weekday(d.start)}, {fmt.long(d.start)}</time>
+              {!sameDay && <> até <time datetime={end.toISOString()}>{fmt.long(end)}</time></>}
+            </dd>
+          </div>
+          <div>
+            <dt>Horário</dt>
+            <dd>{fmt.time(d.start)}{d.end && ` às ${fmt.time(d.end)}`} <span class="muted">(horário de Brasília)</span></dd>
+          </div>
+          <div>
+            <dt>Local</dt>
+            <dd>{place}</dd>
+          </div>
+          <div>
+            <dt>Organização</dt>
+            <dd>{d.organizer}</dd>
+          </div>
+          {d.price && (
+            <div>
+              <dt>Valor</dt>
+              <dd>{d.price}</dd>
+            </div>
+          )}
+        </dl>
+        <div class="actions">
+          {d.url && <a class="btn" href={d.url} target="_blank" rel="noopener">Página do evento <span class="sr-only">(abre em nova aba)</span> ↗</a>}
+          {d.instagram && <a class="btn btn-ghost" href={d.instagram} target="_blank" rel="noopener">Instagram <span class="sr-only">(abre em nova aba)</span> ↗</a>}
+          <div class="cal upcoming-only">
+            <a href={`/eventos/${event.id}.ics`} download>Adicionar ao calendário (.ics)</a>
+            <a href={gcal} target="_blank" rel="noopener">Google Agenda <span class="sr-only">(abre em nova aba)</span></a>
+          </div>
+        </div>
+        <p class="disclaimer">
+          Evento de responsabilidade de quem organiza. O Não Monogâmico apenas divulga e não tem vínculo com a
+          organização. Confirme as informações nos canais oficiais.
+        </p>
+      </aside>
+    </div>
+  </article>
+
+  <section class="section band">
+    <div class="wrap stack" style="--stack: var(--s-5)">
+      <h2>{others.length ? 'Outros eventos' : 'Veja a agenda completa'}</h2>
+      {others.length > 0 && (
+        <div class="grid" style="--min: 300px">
+          {others.map((e) => <EventCard event={e} />)}
+        </div>
+      )}
+      <p><a class="btn btn-ghost" href="/eventos">Ver todos os eventos</a></p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  import { markPast } from '../../scripts/events';
+  markPast();
+  document.querySelectorAll('article[data-event][data-past="true"] .upcoming-only').forEach((el) => el.remove());
+</script>
+
+<style>
+  .ev-head { padding-block: var(--s-7) var(--s-6); }
+  .ev-head h1 { max-width: 22ch; }
+  .ev-head .lede { max-width: 52ch; }
+  .ev-grid { display: grid; gap: var(--s-6); padding-bottom: var(--s-8); align-items: start; }
+  .ev-main { display: flex; flex-direction: column; gap: var(--s-6); min-width: 0; }
+  .ev-main :global(.ev-cover) { border-radius: var(--radius-l); }
+  .ev-info {
+    background: var(--card); border: 1px solid var(--line-soft); border-radius: var(--radius-l);
+    padding: var(--s-5); display: flex; flex-direction: column; gap: var(--s-5);
+    border-top: 6px solid var(--tone);
+  }
+  dl { display: flex; flex-direction: column; gap: var(--s-4); }
+  dt { font-size: var(--step--1); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  dd { margin: 0; }
+  dd .muted { font-size: var(--step--1); }
+  .actions { display: flex; flex-direction: column; gap: var(--s-3); }
+  .actions .btn { width: 100%; }
+  .cal { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); font-size: var(--step--1); font-weight: 600; padding-top: var(--s-2); }
+  .disclaimer { font-size: var(--step--1); color: var(--ink-3); border-top: 1px solid var(--line-soft); padding-top: var(--s-4); }
+  article.is-past .ev-info { border-top-color: var(--ink-3); }
+  @media (min-width: 960px) {
+    .ev-grid { grid-template-columns: minmax(0, 1fr) 340px; gap: var(--s-8); }
+    .ev-info { position: sticky; top: 6rem; order: 2; }
+  }
+</style>

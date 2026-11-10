@@ -1,0 +1,62 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { PROFESSIONAL_CATEGORIES, findCategory } from '../data/categories';
+import { slugify } from '../lib/content';
+import { ATTENDANCE_LABEL } from '../lib/links';
+
+interface Props { item: CollectionEntry<'professionals'> }
+const { item } = Astro.props;
+const d = item.data;
+const cat = findCategory(PROFESSIONAL_CATEGORIES, d.category);
+const city = d.city ? `${d.city}${d.state ? `/${d.state}` : ''}` : '';
+const initials = d.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+const href = `/profissionais/${item.id}`;
+---
+<article
+  class:list={['card', 'pro-card', `tone-${cat.tone}`]}
+  data-item
+  data-category={d.category}
+  data-attendance={d.attendance.join(' ')}
+  data-city={d.city ? slugify(d.city) : ''}
+  data-name={d.name}
+>
+  <div class="card-body">
+    <div class="top">
+      <span class="avatar" aria-hidden="true">{initials}</span>
+      <div>
+        <h3><a href={href}>{d.name}</a></h3>
+        <p class="role">{d.profession}</p>
+      </div>
+    </div>
+    <div class="card-meta">
+      <span class="tag">{cat.label}</span>
+      {d.example && <span class="tag tag-example">Exemplo</span>}
+      {d.attendance.map((a) => <span class="tag tag-outline">{ATTENDANCE_LABEL[a]}</span>)}
+    </div>
+    <p class="desc">{d.description}</p>
+    {d.specialties.length > 0 && (
+      <ul role="list" class="specs" aria-label="Especialidades">
+        {d.specialties.slice(0, 4).map((s) => <li>{s}</li>)}
+      </ul>
+    )}
+    <p class="foot muted small">
+      <span>{city || (d.attendance.includes('online') ? 'Atendimento online' : '')}</span>
+      <span class="go" aria-hidden="true">Ver perfil →</span>
+    </p>
+  </div>
+</article>
+
+<style>
+  .top { display: flex; gap: var(--s-4); align-items: center; }
+  .avatar {
+    flex: none; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--tone); color: #0b0b0f; font-family: var(--font-display); font-weight: 600; font-size: 1.2rem;
+  }
+  .role { font-size: var(--step--1); color: var(--ink-2); }
+  .desc { color: var(--ink-2); }
+  .specs { display: flex; flex-wrap: wrap; gap: var(--s-2); font-size: 0.8rem; }
+  .specs li { padding: 0.2em 0.6em; border: 1px solid var(--line); border-radius: 6px; }
+  .small { font-size: var(--step--1); }
+  .foot { display: flex; justify-content: space-between; gap: var(--s-3); margin-top: auto; padding-top: var(--s-2); }
+  .go { color: var(--tone-ink); font-weight: 600; white-space: nowrap; }
+</style>

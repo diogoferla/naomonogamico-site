@@ -1,0 +1,63 @@
+---
+/**
+ * Compartilhamento sem scripts de terceiros (nada é carregado das redes sociais):
+ * links diretos + "copiar link" + compartilhamento nativo do celular, quando disponível.
+ */
+import { SITE } from '../config/site';
+import { cleanPath } from '../lib/content';
+
+interface Props { title: string; path?: string; label?: string }
+const { title, path = cleanPath(Astro.url.pathname), label = 'Compartilhar' } = Astro.props;
+const url = new URL(path, SITE.url).toString();
+const u = encodeURIComponent(url);
+const t = encodeURIComponent(title);
+const targets = [
+  { name: 'WhatsApp', href: `https://wa.me/?text=${encodeURIComponent(`${title} — ${url}`)}` },
+  { name: 'Telegram', href: `https://t.me/share/url?url=${u}&text=${t}` },
+  { name: 'Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${u}` },
+  { name: 'X', href: `https://x.com/intent/post?url=${u}&text=${t}` },
+  { name: 'LinkedIn', href: `https://www.linkedin.com/sharing/share-offsite/?url=${u}` },
+];
+---
+<div class="share" data-share data-url={url} data-title={title}>
+  <p class="share-label">{label}</p>
+  <ul role="list">
+    <li hidden data-native><button type="button" class="chip">Compartilhar…</button></li>
+    {targets.map((s) => (
+      <li><a class="chip" href={s.href} target="_blank" rel="noopener noreferrer">{s.name}<span class="sr-only"> (abre em nova aba)</span></a></li>
+    ))}
+    <li><button type="button" class="chip" data-copy>Copiar link</button></li>
+  </ul>
+  <p class="share-status" role="status" aria-live="polite" data-status></p>
+</div>
+
+<style>
+  .share { display: flex; flex-direction: column; gap: var(--s-3); }
+  .share-label { font-size: var(--step--1); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+  .share ul { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+  .share .chip { display: inline-flex; align-items: center; text-decoration: none; }
+  .share-status { font-size: var(--step--1); color: var(--teal-ink); min-height: 1.2em; }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-share]').forEach((box) => {
+    const url = box.dataset.url!;
+    const title = box.dataset.title!;
+    const status = box.querySelector<HTMLElement>('[data-status]')!;
+    const native = box.querySelector<HTMLElement>('[data-native]')!;
+    if (typeof navigator.share === 'function') {
+      native.hidden = false;
+      native.querySelector('button')!.addEventListener('click', () => {
+        navigator.share({ title, url }).catch(() => {});
+      });
+    }
+    box.querySelector('[data-copy]')?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(url);
+        status.textContent = 'Link copiado.';
+      } catch {
+        status.textContent = url;
+      }
+    });
+  });
+</script>

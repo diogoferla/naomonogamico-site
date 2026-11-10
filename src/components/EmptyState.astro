@@ -1,0 +1,26 @@
+---
+interface Props { title: string; text?: string; ctaHref?: string; ctaLabel?: string; id?: string; hidden?: boolean; [key: `data-${string}`]: string | boolean }
+const { title, text, ctaHref, ctaLabel, id, hidden = false, ...rest } = Astro.props;
+---
+<div class="empty" id={id} hidden={hidden} {...rest}>
+  <svg viewBox="0 0 120 60" aria-hidden="true" focusable="false">
+    <circle cx="40" cy="30" r="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 4" />
+    <circle cx="60" cy="30" r="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 4" />
+    <circle cx="80" cy="30" r="24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 4" />
+  </svg>
+  <p class="title">{title}</p>
+  {text && <p class="muted">{text}</p>}
+  <slot />
+  {ctaHref && <a class="btn btn-ghost btn-sm" href={ctaHref}>{ctaLabel}</a>}
+</div>
+
+<style>
+  .empty {
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--s-3);
+    padding: var(--s-7) var(--s-5); border: 1.5px dashed var(--line); border-radius: var(--radius);
+    background: color-mix(in srgb, var(--card) 60%, transparent);
+  }
+  .empty svg { width: 120px; color: var(--ink-3); }
+  .title { font-family: var(--font-display); font-size: var(--step-1); }
+  .empty .muted { max-width: 46ch; }
+</style>

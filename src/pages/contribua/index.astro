@@ -1,0 +1,299 @@
+---
+/**
+ * Formulários de indicação — enviados pelo Netlify Forms (os envios ficam no painel da Netlify).
+ * Princípio: pedir só o necessário para divulgar a informação. Nenhum dado de quem indica é
+ * obrigatório; o único contato pessoal possível é opcional (formulário de conteúdo), para resposta.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import { EVENT_CATEGORIES, PROFESSIONAL_CATEGORIES, INITIATIVE_CATEGORIES } from '../../data/categories';
+import { getPage, emphasize } from '../../lib/content';
+const page = (await getPage('contribua')).data;
+
+const types = [
+  { id: 'evento', form: 'indicacao-evento', label: 'Indicar um evento', text: 'Festa, encontro, palestra, workshop.', tone: 'sun' },
+  { id: 'profissional', form: 'indicacao-profissional', label: 'Indicar um profissional', text: 'Você mesmo ou alguém que conhece.', tone: 'teal' },
+  { id: 'iniciativa', form: 'sugestao-iniciativa', label: 'Sugerir uma iniciativa', text: 'Comunidade, projeto, festa, criador.', tone: 'rose' },
+  { id: 'conteudo', form: 'contribuicao-conteudo', label: 'Contribuir com conteúdo', text: 'Escrever, dar entrevista, sugerir ou corrigir.', tone: 'violet' },
+];
+const crumbs = [{ name: 'Contribua', href: '/contribua' }];
+---
+<BaseLayout title={page.seo_title} description={page.seo_description} breadcrumbs={crumbs}>
+  <PageHeader eyebrow={page.eyebrow} title={emphasize(page.title)} lede={page.lede} breadcrumbs={crumbs} tone="sun" />
+
+  <section class="section">
+    <div class="wrap contrib-grid">
+      <div class="types" role="group" aria-label="O que você quer indicar?">
+        {types.map((t) => (
+          <button type="button" class={`type tone-${t.tone}`} data-type={t.id} aria-pressed="false" aria-controls={`form-${t.id}`}>
+            <span class="tt">{t.label}</span>
+            <span class="td">{t.text}</span>
+          </button>
+        ))}
+      </div>
+
+      <div id="formulario" class="forms" tabindex="-1">
+        <!-- EVENTO -->
+        <form id="form-evento" class="form" name="indicacao-evento" method="POST" action="/contribua/enviado"
+          data-netlify="true" netlify-honeypot="bot-field" data-form="evento" novalidate>
+          <input type="hidden" name="form-name" value="indicacao-evento" />
+          <h2 class="form-title" tabindex="-1">Indicar um evento</h2>
+          <p class="intro">Com essas informações conseguimos conferir o evento nos canais oficiais e divulgá-lo na agenda.</p>
+          <div class="field"><label for="ev-nome">Nome do evento *</label><input id="ev-nome" name="nome_do_evento" class="input" required maxlength="160" /></div>
+          <div class="row">
+            <div class="field"><label for="ev-data">Data *</label><input id="ev-data" name="data" type="date" class="input" required /></div>
+            <div class="field"><label for="ev-cidade">Cidade *</label><input id="ev-cidade" name="cidade" class="input" required maxlength="80" placeholder="Ou “online”" /></div>
+          </div>
+          <div class="field">
+            <label for="ev-cat">Categoria *</label>
+            <select id="ev-cat" name="categoria" class="select" required>
+              <option value="">Selecione</option>
+              {EVENT_CATEGORIES.map((c) => <option value={c.label}>{c.label}</option>)}
+            </select>
+          </div>
+          <div class="field">
+            <label for="ev-link">Instagram ou link oficial do evento *</label>
+            <input id="ev-link" name="link_oficial" class="input" required maxlength="300" placeholder="https://… ou @perfil" aria-describedby="ev-link-hint" />
+            <span class="hint" id="ev-link-hint">Usamos o canal oficial para confirmar as informações antes de publicar.</span>
+          </div>
+          <div class="field"><label for="ev-desc">Descrição</label><textarea id="ev-desc" name="descricao" class="textarea" maxlength="2000" placeholder="O que vai acontecer, para quem é, horário, valor…"></textarea></div>
+          <div class="field">
+            <label for="ev-rel">Sua relação com o evento <span class="muted">(opcional)</span></label>
+            <select id="ev-rel" name="relacao_com_o_evento" class="select">
+              <option value="">Prefiro não informar</option>
+              <option>Faço parte da organização</option>
+              <option>Conheço ou vou participar</option>
+            </select>
+          </div>
+          <div class="notice" data-notice></div>
+          <p class="hp" aria-hidden="true"><label>Não preencha este campo <input name="bot-field" tabindex="-1" autocomplete="off" /></label></p>
+          <div class="submit-row"><button type="submit" class="btn">Enviar indicação</button></div>
+          <div class="status" role="status" aria-live="polite" data-status hidden></div>
+        </form>
+
+        <!-- PROFISSIONAL -->
+        <form id="form-profissional" class="form" name="indicacao-profissional" method="POST" action="/contribua/enviado"
+          data-netlify="true" netlify-honeypot="bot-field" data-form="profissional" novalidate hidden>
+          <input type="hidden" name="form-name" value="indicacao-profissional" />
+          <h2 class="form-title" tabindex="-1">Indicar um profissional</h2>
+          <p class="intro">
+            Pedimos só informações profissionais e públicas. Antes de publicar qualquer perfil, entramos em contato pelo
+            canal público indicado para confirmar o interesse da pessoa.
+          </p>
+          <div class="field">
+            <label for="pr-nome">Nome ou identificação profissional <span class="muted">(opcional)</span></label>
+            <input id="pr-nome" name="nome_profissional" class="input" maxlength="120" aria-describedby="pr-nome-hint" />
+            <span class="hint" id="pr-nome-hint">Pode ser o nome usado profissionalmente ou o nome do consultório/escritório.</span>
+          </div>
+          <div class="field">
+            <label for="pr-area">Área de atuação *</label>
+            <select id="pr-area" name="area_de_atuacao" class="select" required>
+              <option value="">Selecione</option>
+              {PROFESSIONAL_CATEGORIES.map((c) => <option value={c.label}>{c.label}</option>)}
+            </select>
+          </div>
+          <div class="field">
+            <label for="pr-canal">Instagram ou outro canal público de contato *</label>
+            <input id="pr-canal" name="canal_publico" class="input" required maxlength="300" placeholder="@perfil, site profissional…" aria-describedby="pr-canal-hint" />
+            <span class="hint" id="pr-canal-hint">Não envie telefone pessoal, endereço residencial ou outros dados privados.</span>
+          </div>
+          <div class="field">
+            <label for="pr-atend">Cidade ou forma de atendimento <span class="muted">(opcional)</span></label>
+            <input id="pr-atend" name="cidade_ou_atendimento" class="input" maxlength="120" placeholder="Ex.: São Paulo · presencial e online" />
+          </div>
+          <div class="field">
+            <label for="pr-quem">Quem está indicando? <span class="muted">(opcional)</span></label>
+            <select id="pr-quem" name="quem_indica" class="select">
+              <option value="">Prefiro não informar</option>
+              <option>Sou o próprio profissional</option>
+              <option>Estou indicando outra pessoa</option>
+            </select>
+          </div>
+          <div class="field"><label for="pr-obs">Observações <span class="muted">(opcional)</span></label><textarea id="pr-obs" name="observacoes" class="textarea" maxlength="1500" placeholder="Especialidades, experiência com o público não monogâmico…"></textarea></div>
+          <div class="notice" data-notice></div>
+          <p class="hp" aria-hidden="true"><label>Não preencha este campo <input name="bot-field" tabindex="-1" autocomplete="off" /></label></p>
+          <div class="submit-row"><button type="submit" class="btn">Enviar indicação</button></div>
+          <div class="status" role="status" aria-live="polite" data-status hidden></div>
+        </form>
+
+        <!-- INICIATIVA -->
+        <form id="form-iniciativa" class="form" name="sugestao-iniciativa" method="POST" action="/contribua/enviado"
+          data-netlify="true" netlify-honeypot="bot-field" data-form="iniciativa" novalidate hidden>
+          <input type="hidden" name="form-name" value="sugestao-iniciativa" />
+          <h2 class="form-title" tabindex="-1">Sugerir uma iniciativa</h2>
+          <p class="intro">Comunidades, projetos, festas, encontros, organizações, criadores de conteúdo e outras iniciativas ligadas à não monogamia.</p>
+          <div class="field"><label for="in-nome">Nome da iniciativa *</label><input id="in-nome" name="nome_da_iniciativa" class="input" required maxlength="160" /></div>
+          <div class="row">
+            <div class="field">
+              <label for="in-cat">Tipo *</label>
+              <select id="in-cat" name="tipo" class="select" required>
+                <option value="">Selecione</option>
+                {INITIATIVE_CATEGORIES.map((c) => <option value={c.label}>{c.label}</option>)}
+              </select>
+            </div>
+            <div class="field"><label for="in-reg">Cidade ou abrangência</label><input id="in-reg" name="cidade_ou_abrangencia" class="input" maxlength="120" placeholder="Ex.: Recife, nacional, online" /></div>
+          </div>
+          <div class="field"><label for="in-link">Instagram, site ou link oficial *</label><input id="in-link" name="link_oficial" class="input" required maxlength="300" placeholder="https://… ou @perfil" /></div>
+          <div class="field"><label for="in-desc">Descrição</label><textarea id="in-desc" name="descricao" class="textarea" maxlength="2000" placeholder="O que é, o que faz, para quem…"></textarea></div>
+          <div class="notice" data-notice></div>
+          <p class="hp" aria-hidden="true"><label>Não preencha este campo <input name="bot-field" tabindex="-1" autocomplete="off" /></label></p>
+          <div class="submit-row"><button type="submit" class="btn">Enviar sugestão</button></div>
+          <div class="status" role="status" aria-live="polite" data-status hidden></div>
+        </form>
+
+        <!-- CONTEÚDO -->
+        <form id="form-conteudo" class="form" name="contribuicao-conteudo" method="POST" action="/contribua/enviado"
+          data-netlify="true" netlify-honeypot="bot-field" data-form="conteudo" novalidate hidden>
+          <input type="hidden" name="form-name" value="contribuicao-conteudo" />
+          <h2 class="form-title" tabindex="-1">Contribuir com conteúdo</h2>
+          <div class="field">
+            <label for="ct-tipo">Você quer… *</label>
+            <select id="ct-tipo" name="interesse" class="select" required>
+              <option value="">Selecione</option>
+              <option>Escrever um artigo</option>
+              <option>Participar de uma entrevista</option>
+              <option>Sugerir um tema</option>
+              <option>Apontar uma correção</option>
+              <option>Contribuir com o projeto de outra forma</option>
+            </select>
+          </div>
+          <div class="field"><label for="ct-tema">Tema, título ou página *</label><input id="ct-tema" name="tema" class="input" required maxlength="200" /></div>
+          <div class="field"><label for="ct-msg">Mensagem *</label><textarea id="ct-msg" name="mensagem" class="textarea" required maxlength="3000" placeholder="Conte sua ideia, proposta ou o que precisa ser corrigido."></textarea></div>
+          <div class="field">
+            <label for="ct-contato">Contato para retorno <span class="muted">(opcional)</span></label>
+            <input id="ct-contato" name="contato_para_retorno" class="input" maxlength="200" autocomplete="off" aria-describedby="ct-contato-hint" data-contact />
+            <span class="hint" id="ct-contato-hint">
+              E-mail ou @ do Instagram. Só é necessário se você quiser resposta — por exemplo, para escrever ou dar entrevista.
+            </span>
+          </div>
+          <label class="check" data-consent hidden>
+            <input type="checkbox" name="autorizo_contato" value="sim" />
+            Autorizo o uso deste contato apenas para responder a esta mensagem.
+          </label>
+          <div class="notice" data-notice></div>
+          <p class="hp" aria-hidden="true"><label>Não preencha este campo <input name="bot-field" tabindex="-1" autocomplete="off" /></label></p>
+          <div class="submit-row"><button type="submit" class="btn">Enviar</button></div>
+          <div class="status" role="status" aria-live="polite" data-status hidden></div>
+        </form>
+
+        <template id="privacy-notice">
+          <p>
+            <strong>Sobre seus dados:</strong> usamos estas informações apenas para avaliar a indicação e, se aprovada,
+            publicar os dados <em>do evento, profissional ou iniciativa</em> no site. Não pedimos dados pessoais de quem
+            indica e não usamos cookies de rastreamento. Os envios ficam guardados no serviço de hospedagem do site e são
+            apagados depois de analisados. <a href="/privacidade">Leia a política de privacidade</a>.
+          </p>
+        </template>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const forms = [...document.querySelectorAll<HTMLFormElement>('form[data-form]')];
+  const cards = document.querySelectorAll<HTMLButtonElement>('[data-type]');
+  const notice = document.querySelector<HTMLTemplateElement>('#privacy-notice')!;
+  forms.forEach((f) => f.querySelector('[data-notice]')!.replaceChildren(notice.content.cloneNode(true)));
+
+  const show = (type: string, focus = false) => {
+    if (!forms.some((f) => f.dataset.form === type)) type = 'evento';
+    forms.forEach((f) => (f.hidden = f.dataset.form !== type));
+    cards.forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.type === type)));
+    if (focus) document.querySelector<HTMLElement>(`#form-${type} .form-title`)?.focus();
+  };
+  show(new URLSearchParams(location.search).get('tipo') ?? 'evento');
+  cards.forEach((c) => c.addEventListener('click', () => show(c.dataset.type!, true)));
+
+  // Consentimento só é pedido quando alguém informa um contato
+  const contact = document.querySelector<HTMLInputElement>('[data-contact]');
+  const consent = document.querySelector<HTMLLabelElement>('[data-consent]');
+  const syncConsent = () => {
+    if (!contact || !consent) return;
+    const filled = contact.value.trim() !== '';
+    consent.hidden = !filled;
+    const box = consent.querySelector('input')!;
+    box.required = filled;
+    if (!filled) box.checked = false;
+  };
+  contact?.addEventListener('input', syncConsent);
+
+  // Envio real apenas no site publicado (Netlify). Em prévias, nada é transmitido.
+  const live = /(^|\.)naomonogamico\.com\.br$|\.netlify\.app$/.test(location.hostname);
+
+  forms.forEach((form) => {
+    const status = form.querySelector<HTMLElement>('[data-status]')!;
+    const say = (msg: string, kind: 'ok' | 'error' | 'info') => {
+      status.hidden = false;
+      status.className = `status ${kind}`;
+      status.textContent = msg;
+    };
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        form.querySelector<HTMLElement>(':invalid')?.focus();
+        return;
+      }
+      if (!live) {
+        say('Prévia: o formulário foi validado, mas nada foi enviado. O envio funciona no site publicado.', 'info');
+        return;
+      }
+      const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+      btn.disabled = true;
+      try {
+        const body = new URLSearchParams(new FormData(form) as unknown as Record<string, string>).toString();
+        const res = await fetch('/', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+        if (!res.ok) throw new Error(String(res.status));
+        form.reset();
+        syncConsent();
+        say('Recebemos sua indicação. Obrigado por ajudar o projeto a crescer!', 'ok');
+      } catch {
+        say('Não foi possível enviar agora. Verifique sua conexão e tente novamente em alguns minutos.', 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+</script>
+
+<style>
+  .contrib-grid { display: grid; gap: var(--s-6); align-items: start; }
+  .types { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+  .type {
+    text-align: left; display: flex; flex-direction: column; gap: var(--s-1);
+    padding: var(--s-4) var(--s-5); border-radius: var(--radius); background: var(--card);
+    border: 1.5px solid var(--line-soft); border-left: 6px solid var(--tone);
+    transition: border-color 0.2s, background-color 0.2s;
+  }
+  .type:hover { border-color: var(--ink); border-left-color: var(--tone); }
+  .type[aria-pressed='true'] { background: var(--tag-bg); border-color: var(--ink); border-left-color: var(--tone); }
+  .tt { font-weight: 700; }
+  .td { font-size: var(--step--1); color: var(--ink-2); }
+  .forms:focus { outline: none; }
+
+  .form {
+    display: flex; flex-direction: column; gap: var(--s-5);
+    background: var(--card); border: 1px solid var(--line-soft); border-radius: var(--radius-l);
+    padding: clamp(1.25rem, 0.8rem + 2.5vw, 2.5rem);
+  }
+  .form-title { font-size: var(--step-2); }
+  .form-title:focus { outline: none; }
+  .intro { color: var(--ink-2); max-width: 60ch; }
+  .row { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+  .check { display: flex; gap: var(--s-3); align-items: flex-start; font-size: var(--step--1); line-height: 1.5; }
+  .check input { width: 20px; height: 20px; margin-top: 2px; flex: none; accent-color: var(--violet); }
+  .notice { font-size: var(--step--1); color: var(--ink-2); background: var(--paper-2); border: 1px dashed var(--line); border-radius: var(--radius); padding: var(--s-4); }
+  .notice :global(a) { color: var(--violet-ink); }
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .submit-row { display: flex; }
+  .hint { font-size: var(--step--1); color: var(--ink-3); }
+  .status { padding: var(--s-4); border-radius: var(--radius-s); font-weight: 600; }
+  .status.ok { background: rgba(68, 195, 200, 0.14); color: var(--teal-ink); }
+  .status.error { background: rgba(244, 71, 95, 0.16); color: var(--coral-ink); }
+  .status.info { background: rgba(255, 122, 69, 0.14); color: var(--sun-ink); }
+  .input:user-invalid, .select:user-invalid, .textarea:user-invalid { border-color: var(--coral-ink); }
+  @media (min-width: 1000px) {
+    .contrib-grid { grid-template-columns: 320px minmax(0, 1fr); gap: var(--s-8); }
+    .types { grid-template-columns: 1fr; position: sticky; top: 6rem; }
+  }
+</style>

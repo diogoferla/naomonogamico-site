@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import EmptyState from '../components/EmptyState.astro';
+import ContributeBand from '../components/ContributeBand.astro';
+import { getArticles } from '../lib/content';
+import { getPage, emphasize } from '../lib/content';
+const page = (await getPage('conversas')).data;
+
+const interviews = (await getArticles()).filter((a) => a.data.type === 'entrevista');
+const crumbs = [{ name: 'Conversas', href: '/conversas' }];
+---
+<BaseLayout
+  title={page.seo_title}
+  description={page.seo_description}
+  breadcrumbs={crumbs}
+>
+  <PageHeader
+    eyebrow={page.eyebrow}
+    title={emphasize(page.title)}
+    lede={page.lede}
+    breadcrumbs={crumbs}
+    tone="violet"
+  />
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="sr-only">Entrevistas publicadas</h2>
+      {interviews.length > 0 ? (
+        <div class="grid" style="--min: 300px">
+          {interviews.map((a) => <ArticleCard article={a} />)}
+        </div>
+      ) : (
+        <EmptyState
+          title="As primeiras conversas estão sendo preparadas."
+          text="Ainda não publicamos entrevistas. Se você é profissional, pesquisa o tema, organiza eventos ou quer contar sua experiência, fale com a gente."
+          ctaHref="/contribua?tipo=conteudo#formulario"
+          ctaLabel="Quero participar"
+        />
+      )}
+    </div>
+  </section>
+
+  <ContributeBand />
+</BaseLayout>

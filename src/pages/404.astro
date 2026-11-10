@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Página não encontrada" description="Esta página não existe ou mudou de endereço." noindex>
+  <section class="section">
+    <div class="wrap nf">
+      <svg viewBox="0 0 200 100" aria-hidden="true" focusable="false">
+        <circle cx="60" cy="50" r="40" fill="var(--coral)" />
+        <circle cx="100" cy="50" r="40" fill="none" stroke="var(--ink-3)" stroke-width="2" stroke-dasharray="6 6" />
+        <circle cx="140" cy="50" r="40" fill="var(--sun)" style="mix-blend-mode:screen" />
+      </svg>
+      <p class="eyebrow">Erro 404</p>
+      <h1>Esta página <em>não está aqui</em>.</h1>
+      <p class="lede">Talvez o endereço tenha mudado ou o conteúdo tenha saído do ar. Que tal seguir por outro caminho?</p>
+      <div class="flow-row">
+        <a class="btn" href="/">Ir para o início</a>
+        <a class="btn btn-ghost" href="/eventos">Ver eventos</a>
+        <a class="btn btn-ghost" href="/entenda">Entender a não monogamia</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+<style>
+  .nf { display: flex; flex-direction: column; gap: var(--s-5); align-items: flex-start; min-height: 50vh; justify-content: center; }
+  .nf svg { width: 220px; isolation: isolate; }
+</style>

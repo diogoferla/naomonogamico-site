@@ -1,0 +1,44 @@
+---
+interface Props { title?: string; text?: string; type?: string; label?: string }
+const {
+  title = 'Conhece algo que deveria estar aqui?',
+  text = 'Este é um projeto independente que cresce com indicações. Se você organiza, participa ou conhece um evento, iniciativa ou profissional, conte pra gente.',
+  type,
+  label = 'Fazer uma indicação',
+} = Astro.props;
+const href = type ? `/contribua?tipo=${type}#formulario` : '/contribua';
+---
+<section class="section contribute">
+  <div class="wrap">
+    <div class="box">
+      <div class="stack">
+        <h2>{title}</h2>
+        <p class="muted">{text}</p>
+      </div>
+      <a class="btn" href={href}>{label} <span aria-hidden="true">→</span></a>
+      <svg class="shape" viewBox="0 0 200 120" aria-hidden="true" focusable="false">
+        <defs><linearGradient id="cb-grad" x1="0" x2="1"><stop offset="0" stop-color="#ff7a45" /><stop offset=".35" stop-color="#f4475f" /><stop offset=".65" stop-color="#8b3fd1" /><stop offset="1" stop-color="#44c3c8" /></linearGradient></defs>
+        <circle cx="62" cy="60" r="46" fill="none" stroke="url(#cb-grad)" stroke-width="10" />
+        <circle cx="120" cy="60" r="46" fill="none" stroke="url(#cb-grad)" stroke-width="10" opacity=".7" />
+      </svg>
+    </div>
+  </div>
+</section>
+
+<style>
+  .box {
+    position: relative; overflow: hidden;
+    display: grid; gap: var(--s-5); align-items: center;
+    padding: clamp(1.75rem, 1rem + 4vw, 3.5rem);
+    background: linear-gradient(var(--card), var(--card)) padding-box, var(--grad) border-box; border: 1.5px solid transparent; border-radius: var(--radius-l);
+  }
+  .box h2 { font-size: var(--step-3); max-width: 18ch; }
+  .box .muted { max-width: 52ch; }
+  .box .btn { justify-self: start; position: relative; z-index: 1; }
+  .box .stack { position: relative; z-index: 1; }
+  .shape { position: absolute; right: -40px; bottom: -40px; width: 220px; opacity: 0.6; isolation: isolate; }
+  @media (min-width: 860px) {
+    .box { grid-template-columns: 1fr auto; padding-right: 14rem; }
+    .shape { width: 260px; right: -30px; bottom: auto; top: 50%; transform: translateY(-50%); opacity: 1; }
+  }
+</style>

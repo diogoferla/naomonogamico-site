@@ -1,0 +1,159 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ShareButtons from '../../components/ShareButtons.astro';
+import ProfessionalCard from '../../components/ProfessionalCard.astro';
+import { getProfessionals, absoluteUrl } from '../../lib/content';
+import { contactLinks, ATTENDANCE_LABEL } from '../../lib/links';
+import { PROFESSIONAL_CATEGORIES, findCategory } from '../../data/categories';
+
+export async function getStaticPaths() {
+  const all = await getProfessionals();
+  return all.map((item) => ({ params: { slug: item.id }, props: { item, all } }));
+}
+
+const { item, all } = Astro.props;
+const d = item.data;
+const { Content } = await render(item);
+const hasBody = Boolean(item.body?.trim());
+const cat = findCategory(PROFESSIONAL_CATEGORIES, d.category);
+const initials = d.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+const city = d.city ? `${d.city}${d.state ? `/${d.state}` : ''}` : '';
+const links = contactLinks(d);
+const related = all.filter((p) => p.id !== item.id && p.data.category === d.category).slice(0, 3);
+const crumbs = [{ name: 'Profissionais', href: '/profissionais' }, { name: d.name, href: `/profissionais/${item.id}` }];
+
+const jsonLd = d.example ? [] : [{
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: d.name,
+  jobTitle: d.profession,
+  description: d.description,
+  knowsAbout: d.specialties.length ? d.specialties : undefined,
+  address: d.city ? { '@type': 'PostalAddress', addressLocality: d.city, addressRegion: d.state, addressCountry: 'BR' } : undefined,
+  sameAs: [d.instagram, d.website].filter(Boolean),
+  url: absoluteUrl(`/profissionais/${item.id}`),
+}];
+---
+<BaseLayout
+  title={`${d.name} — ${d.profession}`}
+  description={d.description}
+  breadcrumbs={crumbs}
+  noindex={d.example}
+  jsonLd={jsonLd}
+>
+  <article class={`tone-${cat.tone}`}>
+    <header class="pf-head">
+      <div class="wrap stack" style="--stack: var(--s-4)">
+        <nav aria-label="Você está em" class="crumbs">
+          <a href="/">Início</a> <span aria-hidden="true">/</span> <a href="/profissionais">Profissionais</a>
+        </nav>
+        <div class="who">
+          <span class="avatar" aria-hidden="true">{initials}</span>
+          <div class="stack" style="--stack: var(--s-2)">
+            <div class="card-meta">
+              <span class="tag">{cat.label}</span>
+              {d.example && <span class="tag tag-example">Exemplo — não é um perfil real</span>}
+            </div>
+            <h1>{d.name}</h1>
+            <p class="lede">{d.profession}</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="wrap pf-grid">
+      <div class="pf-main stack" style="--stack: var(--s-6)">
+        <div class="prose">
+          {hasBody ? <Content /> : <p>{d.description}</p>}
+        </div>
+        {d.specialties.length > 0 && (
+          <section aria-labelledby="h-esp" class="stack" style="--stack: var(--s-3)">
+            <h2 id="h-esp" class="sub">Áreas de atenção</h2>
+            <ul role="list" class="specs">{d.specialties.map((s) => <li>{s}</li>)}</ul>
+          </section>
+        )}
+        <ShareButtons title={`${d.name} — ${d.profession}`} label="Compartilhar este perfil" />
+      </div>
+
+      <aside class="pf-info" aria-label="Informações de atendimento">
+        <dl>
+          {d.attendance.length > 0 && (
+            <div><dt>Atendimento</dt><dd>{d.attendance.map((a) => ATTENDANCE_LABEL[a]).join(' e ')}</dd></div>
+          )}
+          {city && <div><dt>Cidade</dt><dd>{city}</dd></div>}
+          {d.registration && <div><dt>Registro profissional</dt><dd>{d.registration}</dd></div>}
+        </dl>
+        {links.length > 0 && (
+          <div class="contacts">
+            <p class="sub-label">Canais públicos</p>
+            <ul role="list">
+              {links.map((l) => (
+                <li>
+                  <a href={l.href} {...(l.external ? { target: '_blank', rel: 'noopener nofollow' } : {})}>
+                    <span class="cl">{l.label}</span>
+                    {l.text && <span class="ct">{l.text}</span>}
+                    {l.external && <span class="sr-only"> (abre em nova aba)</span>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <p class="disclaimer">
+          {d.source === 'indicacao' && <><strong>Perfil incluído a partir de indicação.</strong> </>}
+          A presença no diretório não é recomendação, certificação ou vínculo com o Não Monogâmico. Confira o registro
+          profissional e converse antes de iniciar qualquer atendimento.
+        </p>
+        <p class="fix"><a href="/contribua?tipo=profissional#formulario">Sugerir correção</a></p>
+      </aside>
+    </div>
+  </article>
+
+  {related.length > 0 && (
+    <section class="section band">
+      <div class="wrap stack" style="--stack: var(--s-5)">
+        <h2>Outros profissionais de {cat.label.toLowerCase()}</h2>
+        <div class="grid" style="--min: 300px">{related.map((p) => <ProfessionalCard item={p} />)}</div>
+        <p><a class="btn btn-ghost" href="/profissionais">Ver o diretório completo</a></p>
+      </div>
+    </section>
+  )}
+</BaseLayout>
+
+<style>
+  .pf-head { padding-block: var(--s-7) var(--s-6); }
+  .who { display: flex; gap: var(--s-5); align-items: center; flex-wrap: wrap; }
+  .avatar {
+    flex: none; width: 88px; height: 88px; border-radius: 50%; display: grid; place-items: center;
+    background: var(--tone); color: #0b0b0f; font-family: var(--font-display); font-weight: 700; font-size: 1.8rem;
+  }
+  .pf-head .lede { max-width: none; }
+  .pf-grid { display: grid; gap: var(--s-6); padding-bottom: var(--s-8); align-items: start; }
+  .pf-main { min-width: 0; max-width: var(--wrap-text); }
+  .sub { font-size: var(--step-1); }
+  .specs { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+  .specs li { padding: 0.3em 0.8em; border: 1px solid var(--line); border-radius: 8px; font-size: var(--step--1); }
+  .pf-info {
+    background: var(--card); border: 1px solid var(--line-soft); border-top: 4px solid var(--tone);
+    border-radius: var(--radius-l); padding: var(--s-5); display: flex; flex-direction: column; gap: var(--s-5);
+  }
+  dl { display: flex; flex-direction: column; gap: var(--s-4); }
+  dt, .sub-label { font-size: var(--step--1); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  dd { margin: 0; }
+  .contacts ul { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-2); }
+  .contacts a {
+    display: flex; justify-content: space-between; gap: var(--s-3); align-items: center;
+    padding: 0.7em 0.9em; border: 1px solid var(--line); border-radius: var(--radius-s); text-decoration: none;
+  }
+  .contacts a:hover { border-color: var(--ink); }
+  .cl { font-weight: 600; }
+  .ct { color: var(--ink-2); font-size: var(--step--1); overflow-wrap: anywhere; text-align: right; }
+  .disclaimer { font-size: var(--step--1); color: var(--ink-3); border-top: 1px solid var(--line-soft); padding-top: var(--s-4); }
+  .disclaimer strong { color: var(--ink-2); }
+  .fix { font-size: var(--step--1); }
+  @media (min-width: 960px) {
+    .pf-grid { grid-template-columns: minmax(0, 1fr) 340px; gap: var(--s-8); }
+    .pf-info { position: sticky; top: 6rem; }
+  }
+</style>

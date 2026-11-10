@@ -1,0 +1,88 @@
+---
+/**
+ * Capa editorial gerada: composições abstratas de formas, determinísticas a partir de `seed`.
+ * Usada quando um item não tem imagem própria. Se `image` for informado, exibe a foto.
+ */
+import { hash } from '../lib/content';
+import type { Tone } from '../data/categories';
+
+interface Props {
+  seed: string;
+  tone?: Tone;
+  image?: string;
+  alt?: string;
+  ratio?: string;
+  eager?: boolean;
+  class?: string;
+}
+const { seed, tone = 'coral', image, alt = '', ratio = '16 / 10', eager = false, class: cls } = Astro.props;
+
+const COLORS: Record<Tone, string> = {
+  coral: '#f4475f', violet: '#8b3fd1', teal: '#44c3c8', sun: '#ff7a45', rose: '#d8327a',
+};
+const BG: Record<Tone, string> = {
+  coral: '#1f1016', violet: '#170f24', teal: '#0c1c1f', sun: '#21130e', rose: '#1e0e19',
+};
+const order: Tone[] = ['coral', 'violet', 'sun', 'teal', 'rose'];
+const gid = `cg-${hash(seed)}`;
+const h = hash(seed);
+const r = (n: number, i: number) => ((h >>> (i * 3)) % n);
+const main = COLORS[tone];
+const others = order.filter((t) => t !== tone).map((t) => COLORS[t]);
+const a = others[r(4, 1)];
+const b = others[(r(4, 1) + 1 + r(3, 2)) % 4];
+const variant = r(4, 3);
+const flip = r(2, 5) === 1;
+const shift = r(60, 4) - 30;
+---
+<div class:list={['cover', cls]} style={`aspect-ratio:${ratio};background:${BG[tone]}`}>
+  {image ? (
+    <img src={image} alt={alt} loading={eager ? 'eager' : 'lazy'} decoding="async" />
+  ) : (
+    <svg viewBox="0 0 400 250" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false" style={flip ? 'transform:scaleX(-1)' : undefined}>
+      <defs>
+        <linearGradient id={gid} x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0" stop-color="#ff7a45" /><stop offset=".3" stop-color="#f4475f" />
+          <stop offset=".55" stop-color="#8b3fd1" /><stop offset=".8" stop-color="#4750e0" /><stop offset="1" stop-color="#44c3c8" />
+        </linearGradient>
+      </defs>
+      {variant === 0 && (
+        <g fill="none" stroke-width="16" style="isolation:isolate">
+          <circle cx={140 + shift} cy="130" r="66" stroke={main} />
+          <circle cx={210 + shift} cy="130" r="66" stroke={a} style="mix-blend-mode:screen" />
+          <circle cx={280 + shift} cy="130" r="66" stroke={b} style="mix-blend-mode:screen" />
+        </g>
+      )}
+      {variant === 1 && (
+        <g>
+          <path d={`M${60 + shift} 250 A140 140 0 0 1 ${340 + shift} 250 Z`} fill={main} />
+          <circle cx={300 - shift} cy="70" r="34" fill={a} />
+          <circle cx={90 - shift / 2} cy="62" r="14" fill={b} />
+        </g>
+      )}
+      {variant === 2 && (
+        <g fill="none" stroke-width="20">
+          <circle cx={170 + shift} cy="125" r="80" stroke={`url(#${gid})`} />
+          <circle cx={250 + shift} cy="125" r="80" stroke={`url(#${gid})`} opacity=".85" />
+          <circle cx={200 + shift} cy="125" r="14" fill={b} stroke="none" />
+          <circle cx={330 - shift} cy="40" r="10" fill={b} stroke="none" />
+        </g>
+      )}
+      {variant === 3 && (
+        <g style="isolation:isolate">
+          <rect x={40 + shift} y="40" width="170" height="170" rx="85" fill={main} />
+          <rect x={170 + shift} y="70" width="190" height="110" rx="55" fill="none" stroke={`url(#${gid})`} stroke-width="16" />
+          <circle cx={340 + shift / 2} cy="200" r="22" fill={b} />
+        </g>
+      )}
+      <g fill="#ffffff" opacity=".18">
+        {Array.from({ length: 5 }).map((_, i) => <circle cx={24 + i * 12} cy="226" r="2.2" />)}
+      </g>
+    </svg>
+  )}
+</div>
+
+<style>
+  .cover { position: relative; overflow: hidden; width: 100%; }
+  .cover svg, .cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+</style>

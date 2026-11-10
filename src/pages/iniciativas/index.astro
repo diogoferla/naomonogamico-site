@@ -1,0 +1,101 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import InitiativeCard from '../../components/InitiativeCard.astro';
+import EmptyState from '../../components/EmptyState.astro';
+import ContributeBand from '../../components/ContributeBand.astro';
+import { getInitiatives, slugify, absoluteUrl } from '../../lib/content';
+import { INITIATIVE_CATEGORIES } from '../../data/categories';
+import { getPage, emphasize } from '../../lib/content';
+const page = (await getPage('iniciativas')).data;
+
+const items = await getInitiatives();
+const regions = [...new Map(items.filter((i) => i.data.region).map((i) => [slugify(i.data.region!), i.data.region!])).entries()];
+const crumbs = [{ name: 'Iniciativas', href: '/iniciativas' }];
+const description = page.seo_description;
+const real = items.filter((i) => !i.data.example && i.data.verified);
+---
+<BaseLayout
+  title={page.seo_title}
+  description={page.seo_description}
+  breadcrumbs={crumbs}
+  jsonLd={real.length ? [{
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Iniciativas ligadas à não monogamia',
+    itemListElement: real.map((i, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      item: { '@type': 'Organization', name: i.data.name, description: i.data.description, url: i.data.website ?? i.data.instagram ?? absoluteUrl(`/iniciativas#${i.id}`) },
+    })),
+  }] : []}
+>
+  <PageHeader
+    eyebrow={page.eyebrow}
+    title={emphasize(page.title)}
+    lede={page.lede}
+    breadcrumbs={crumbs}
+    tone="rose"
+  />
+
+  <section class="section">
+    <div class="wrap stack" style="--stack: var(--s-6)" data-directory>
+      <p class="note">
+        <strong>Sobre este diretório:</strong> listar uma iniciativa não significa parceria, patrocínio ou recomendação.
+        As informações são publicadas a partir de fontes públicas e indicações, e podem mudar — confira sempre os canais
+        oficiais. Itens marcados como <em>“informações a confirmar”</em> ainda estão sendo verificados.
+      </p>
+
+      <div class="filters" hidden={items.length === 0}>
+        <div class="chips" role="group" aria-label="Filtrar por categoria">
+          <button type="button" class="chip" data-cat="" aria-pressed="true">Todas</button>
+          {INITIATIVE_CATEGORIES.map((c) => <button type="button" class="chip" data-cat={c.id} aria-pressed="false">{c.label}</button>)}
+        </div>
+        {regions.length > 0 && (
+          <div class="field region">
+            <label for="f-region">Região</label>
+            <select id="f-region" class="select" data-filter="region">
+              <option value="">Todas</option>
+              {regions.map(([id, label]) => <option value={id}>{label}</option>)}
+            </select>
+          </div>
+        )}
+        <p class="count muted" aria-live="polite" data-count></p>
+      </div>
+
+      <h2 class="sr-only">Lista de iniciativas</h2>
+      {items.length > 0 && (
+        <div class="grid" style="--min: 290px">
+          {items.map((i) => <InitiativeCard item={i} />)}
+        </div>
+      )}
+      <EmptyState
+        title={items.length ? 'Nenhuma iniciativa nesta categoria ainda.' : 'O diretório está sendo montado.'}
+        text="Conhece uma festa, comunidade ou projeto que deveria estar aqui?"
+        ctaHref="/contribua?tipo=iniciativa#formulario"
+        ctaLabel="Sugerir uma iniciativa"
+        hidden={items.length > 0}
+        data-empty
+      />
+    </div>
+  </section>
+
+  <ContributeBand
+    title="Faz parte de uma iniciativa?"
+    text="Se você organiza uma festa, comunidade ou projeto — ou quer corrigir informações sobre a sua —, envie os dados. Nada é publicado sem revisão."
+    type="iniciativa"
+    label="Sugerir ou corrigir"
+  />
+</BaseLayout>
+
+<script>
+  import { initDirectory } from '../../scripts/directory';
+  const root = document.querySelector<HTMLElement>('[data-directory]');
+  if (root) initDirectory(root, ['iniciativa', 'iniciativas']);
+</script>
+
+<style>
+  .filters { display: flex; flex-direction: column; gap: var(--s-4); }
+  .region { max-width: 280px; }
+  .count { font-size: var(--step--1); font-weight: 600; }
+</style>

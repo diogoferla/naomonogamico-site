@@ -1,0 +1,100 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import ContributeBand from '../../components/ContributeBand.astro';
+import { getGuides, getFaq, absoluteUrl } from '../../lib/content';
+import { getPage, emphasize } from '../../lib/content';
+const page = (await getPage('entenda')).data;
+
+const guides = await getGuides();
+const faq = (await getFaq()).slice(0, 4);
+const crumbs = [{ name: 'Entenda', href: '/entenda' }];
+const description = page.seo_description;
+const tones = ['coral', 'violet', 'teal', 'sun', 'rose'];
+---
+<BaseLayout
+  title={page.seo_title}
+  description={page.seo_description}
+  breadcrumbs={crumbs}
+  jsonLd={[{
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Entenda a não monogamia',
+    description,
+    hasPart: guides.map((g) => ({ '@type': 'Article', headline: g.data.title, url: absoluteUrl(`/entenda/${g.id}`) })),
+  }]}
+>
+  <PageHeader
+    eyebrow={page.eyebrow}
+    title={emphasize(page.title)}
+    lede={page.lede}
+    breadcrumbs={crumbs}
+    tone="violet"
+  />
+
+  <section class="section">
+    <div class="wrap">
+      <ol role="list" class="guide-list">
+        {guides.map((g, i) => (
+          <li class={`tone-${tones[i % tones.length]}`}>
+            <a href={`/entenda/${g.id}`}>
+              <span class="n">{String(i + 1).padStart(2, '0')}</span>
+              <span class="t">
+                <span class="title">{g.data.title}</span>
+                <span class="desc">{g.data.description}</span>
+              </span>
+              <span class="go" aria-hidden="true">→</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section band">
+    <div class="wrap stack" style="--stack: var(--s-5)">
+      <h2>Dúvidas rápidas</h2>
+      <div class="grid" style="--min: 260px">
+        {faq.map((q) => (
+          <a class="card qcard" href={`/faq#${q.id}`}>
+            <div class="card-body">
+              <p class="q">{q.data.question}</p>
+              <span class="link-arrow">Ver resposta <span aria-hidden="true">→</span></span>
+            </div>
+          </a>
+        ))}
+      </div>
+      <p><a class="btn btn-ghost" href="/faq">Todas as perguntas frequentes</a></p>
+    </div>
+  </section>
+
+  <ContributeBand
+    title="Sentiu falta de algum tema?"
+    text="Os guias vão crescer aos poucos. Se você tem uma dúvida que não encontrou aqui, ou quer contribuir com um texto, conte pra gente."
+    type="conteudo"
+    label="Sugerir um tema"
+  />
+</BaseLayout>
+
+<style>
+  .guide-list { border-top: 1px solid var(--line); }
+  .guide-list li { border-bottom: 1px solid var(--line); }
+  .guide-list a {
+    display: grid; grid-template-columns: 3rem 1fr auto; gap: var(--s-4); align-items: center;
+    padding-block: var(--s-5); text-decoration: none;
+    transition: padding 0.25s var(--ease), background-color 0.25s;
+  }
+  .guide-list a:hover { background: var(--tag-bg); padding-inline: var(--s-4); }
+  .n { font-family: var(--font-display); font-weight: 700; font-size: var(--step-2); color: var(--tone-ink); }
+  .t { display: flex; flex-direction: column; gap: var(--s-1); }
+  .title { font-family: var(--font-display); font-weight: 600; font-size: var(--step-1); line-height: 1.25; }
+  .desc { color: var(--ink-2); max-width: 60ch; }
+  .go { font-size: var(--step-2); color: var(--tone-ink); }
+  .qcard { text-decoration: none; }
+  .q { font-family: var(--font-display); font-weight: 600; font-size: var(--step-1); line-height: 1.3; }
+  .qcard .link-arrow { margin-top: auto; align-self: flex-start; font-size: var(--step--1); }
+  @media (max-width: 560px) {
+    .guide-list a { grid-template-columns: 2.2rem 1fr; }
+    .go { display: none; }
+  }
+</style>

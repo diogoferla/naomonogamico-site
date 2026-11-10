@@ -1,0 +1,124 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHeader from '../components/PageHeader.astro';
+import ContributeBand from '../components/ContributeBand.astro';
+import { getFaq, mdToText } from '../lib/content';
+import { render } from 'astro:content';
+import { getPage, emphasize } from '../lib/content';
+const page = (await getPage('faq')).data;
+
+const faq = await getFaq();
+const groups = [
+  { id: 'conceitos', label: 'Conceitos', tone: 'violet' },
+  { id: 'na-pratica', label: 'Na prática', tone: 'coral' },
+  { id: 'sobre-o-site', label: 'Sobre o site', tone: 'teal' },
+] as const;
+const rendered = Object.fromEntries(await Promise.all(faq.map(async (q) => [q.id, (await render(q)).Content] as const)));
+const crumbs = [{ name: 'Perguntas frequentes', href: '/faq' }];
+---
+<BaseLayout
+  title={page.seo_title}
+  description={page.seo_description}
+  breadcrumbs={crumbs}
+  jsonLd={[{
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faq.map((q) => ({
+      '@type': 'Question',
+      name: q.data.question,
+      acceptedAnswer: { '@type': 'Answer', text: mdToText(q.body) },
+    })),
+  }]}
+>
+  <PageHeader
+    eyebrow={page.eyebrow}
+    title={emphasize(page.title)}
+    lede={page.lede}
+    breadcrumbs={crumbs}
+    tone="teal"
+  />
+
+  <section class="section">
+    <div class="wrap faq-grid">
+      <nav class="faq-nav" aria-label="Grupos de perguntas">
+        <ul role="list">
+          {groups.map((g) => <li><a href={`#grupo-${g.id}`}>{g.label}</a></li>)}
+        </ul>
+      </nav>
+      <div class="faq-groups">
+        {groups.map((g) => (
+          <section aria-labelledby={`grupo-${g.id}`} class={`tone-${g.tone}`}>
+            <h2 id={`grupo-${g.id}`} class="gtitle">{g.label}</h2>
+            <div class="items">
+              {faq.filter((q) => q.data.group === g.id).map((q) => {
+                const Answer = rendered[q.id];
+                return (
+                <details id={q.id} class="qa">
+                  <summary>
+                    <h3>{q.data.question}</h3>
+                    <span class="icon" aria-hidden="true"></span>
+                  </summary>
+                  <div class="answer">
+                    <Answer />
+                    {q.data.link && <p><a class="link-arrow" href={q.data.link.href}>{q.data.link.label} <span aria-hidden="true">→</span></a></p>}
+                  </div>
+                </details>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <ContributeBand
+    title="Não encontrou sua dúvida?"
+    text="Envie sua pergunta. Ela pode virar uma nova resposta aqui ou um conteúdo completo."
+    type="conteudo"
+    label="Enviar pergunta"
+  />
+</BaseLayout>
+
+<script>
+  // Abre automaticamente a pergunta indicada na URL (ex.: /faq#poliamor)
+  const open = () => {
+    const el = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (el instanceof HTMLDetailsElement) { el.open = true; el.scrollIntoView(); }
+  };
+  open();
+  window.addEventListener('hashchange', open);
+</script>
+
+<style>
+  .faq-grid { display: grid; gap: var(--s-6); }
+  .faq-nav ul { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+  .faq-nav a { display: inline-block; padding: 0.45em 1em; border: 1.5px solid var(--line); border-radius: 999px; text-decoration: none; font-weight: 600; font-size: var(--step--1); background: var(--card); }
+  .faq-nav a:hover { border-color: var(--ink); }
+  .faq-groups { display: flex; flex-direction: column; gap: var(--s-8); max-width: 48rem; }
+  .gtitle { font-size: var(--step-2); margin-bottom: var(--s-4); display: flex; align-items: center; gap: var(--s-3); }
+  .gtitle::before { content: ''; width: 14px; height: 14px; border-radius: 50%; background: var(--tone); }
+  .items { border-top: 1px solid var(--line); }
+  .qa { border-bottom: 1px solid var(--line); }
+  summary {
+    display: flex; justify-content: space-between; align-items: center; gap: var(--s-4);
+    padding-block: var(--s-5); cursor: pointer; list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary h3 { font-size: var(--step-1); }
+  summary:hover h3 { color: var(--tone-ink); }
+  .icon { flex: none; position: relative; width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--ink); }
+  .icon::before, .icon::after { content: ''; position: absolute; left: 50%; top: 50%; width: 12px; height: 1.5px; background: var(--ink); transform: translate(-50%, -50%); transition: transform 0.25s var(--ease); }
+  .icon::after { transform: translate(-50%, -50%) rotate(90deg); }
+  .qa[open] .icon { background: var(--ink); }
+  .qa[open] .icon::before, .qa[open] .icon::after { background: var(--paper); }
+  .qa[open] .icon::after { transform: translate(-50%, -50%) rotate(0deg); }
+  .answer :global(a) { color: var(--violet-ink); }
+  .answer { padding-bottom: var(--s-5); display: flex; flex-direction: column; gap: var(--s-3); color: var(--ink-2); max-width: 65ch; }
+  @media (min-width: 1040px) {
+    .faq-grid { grid-template-columns: 200px 1fr; gap: var(--s-8); }
+    .faq-nav ul { flex-direction: column; position: sticky; top: 6rem; }
+    .faq-nav a { border: 0; background: none; padding: 0.3em 0; font-size: var(--step-0); }
+    .faq-nav a:hover { text-decoration: underline; }
+  }
+</style>

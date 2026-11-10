@@ -1,0 +1,90 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ContributeBand from '../../components/ContributeBand.astro';
+import ShareButtons from '../../components/ShareButtons.astro';
+import { getGuides, fmt, readingTime, absoluteUrl } from '../../lib/content';
+import { SITE } from '../../config/site';
+
+export async function getStaticPaths() {
+  const guides = await getGuides();
+  return guides.map((g, i) => ({
+    params: { slug: g.id },
+    props: { guide: g, prev: guides[i - 1] ?? null, next: guides[i + 1] ?? null, all: guides },
+  }));
+}
+
+const { guide, prev, next, all } = Astro.props;
+const { Content, headings } = await render(guide);
+const d = guide.data;
+const crumbs = [{ name: 'Entenda', href: '/entenda' }, { name: d.title, href: `/entenda/${guide.id}` }];
+const toc = headings.filter((h) => h.depth === 2);
+---
+<BaseLayout
+  title={d.title}
+  description={d.description}
+  type="article"
+  modifiedTime={d.updated}
+  breadcrumbs={crumbs}
+  jsonLd={[{
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: d.title,
+    description: d.description,
+    dateModified: d.updated.toISOString(),
+    inLanguage: 'pt-BR',
+    author: { '@type': 'Organization', name: SITE.name, url: SITE.url },
+    mainEntityOfPage: absoluteUrl(`/entenda/${guide.id}`),
+    isPartOf: { '@type': 'CollectionPage', name: 'Entenda a não monogamia', url: absoluteUrl('/entenda') },
+  }]}
+>
+  <article>
+    <header class="reading-head">
+      <div class="wrap-text stack" style="--stack: var(--s-4)">
+        <nav aria-label="Você está em" class="crumbs">
+          <a href="/">Início</a> <span aria-hidden="true">/</span> <a href="/entenda">Entenda</a>
+        </nav>
+        <p class="eyebrow" style="--dot: var(--violet)">Guia {String(guide.data.order).padStart(2, '0')} de {String(all.length).padStart(2, '0')}</p>
+        <h1>{d.title}</h1>
+        <p class="lede">{d.description}</p>
+        <p class="meta muted">Atualizado em <time datetime={d.updated.toISOString()}>{fmt.long(d.updated)}</time> · {readingTime(guide.body)} min de leitura</p>
+      </div>
+    </header>
+
+    <div class="wrap reading-grid">
+      <aside class="side" aria-label="Nesta página">
+        {toc.length > 0 && (
+          <nav class="toc">
+            <p class="side-title">Nesta página</p>
+            <ol role="list">
+              {toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}
+            </ol>
+          </nav>
+        )}
+      </aside>
+      <div class="prose">
+        <Content />
+        <p class="note">
+          Os guias do Não Monogâmico são introdutórios e escritos a partir de conceitos amplamente discutidos na
+          comunidade. Eles não substituem orientação profissional. Encontrou algo impreciso?
+          <a href="/contribua?tipo=conteudo#formulario">Avise a gente</a>.
+        </p>
+        <ShareButtons title={d.title} label="Compartilhar este guia" />
+      </div>
+    </div>
+
+    <nav class="wrap pager" aria-label="Outros guias">
+      {prev ? (
+        <a class="pg prev" href={`/entenda/${prev.id}`}><span class="muted">← Anterior</span><span class="pt">{prev.data.title}</span></a>
+      ) : <a class="pg prev" href="/entenda"><span class="muted">← Todos os guias</span><span class="pt">Entenda</span></a>}
+      {next ? (
+        <a class="pg next" href={`/entenda/${next.id}`}><span class="muted">Próximo →</span><span class="pt">{next.data.title}</span></a>
+      ) : <a class="pg next" href="/faq"><span class="muted">Continue →</span><span class="pt">Perguntas frequentes</span></a>}
+    </nav>
+  </article>
+
+  <ContributeBand
+    title="Quer conversar com quem vive isso?"
+    text="Eventos e comunidades podem ser um bom próximo passo. Veja a agenda ou indique um espaço que você conhece."
+  />
+</BaseLayout>

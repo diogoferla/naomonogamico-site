@@ -1,0 +1,128 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Cover from '../../components/Cover.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import ShareButtons from '../../components/ShareButtons.astro';
+import ContributeBand from '../../components/ContributeBand.astro';
+import { getArticles, fmt, readingTime, absoluteUrl } from '../../lib/content';
+import { ARTICLE_CATEGORIES, findCategory } from '../../data/categories';
+import { SITE } from '../../config/site';
+
+export async function getStaticPaths() {
+  const articles = await getArticles();
+  return articles.map((article) => ({ params: { slug: article.id }, props: { article, all: articles } }));
+}
+
+const { article, all } = Astro.props;
+const { Content, headings } = await render(article);
+const d = article.data;
+const cat = findCategory(ARTICLE_CATEGORIES, d.category);
+const toc = headings.filter((h) => h.depth === 2);
+const isInterview = d.type === 'entrevista';
+
+// Relacionados: mesma categoria primeiro, depois tags em comum, depois os mais recentes
+const score = (a: typeof article) =>
+  (a.data.category === d.category ? 2 : 0) + a.data.tags.filter((t) => d.tags.includes(t)).length;
+const related = all
+  .filter((a) => a.id !== article.id)
+  .sort((a, b) => score(b) - score(a) || b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 3);
+
+const section = isInterview ? { name: 'Conversas', href: '/conversas' } : { name: 'Conteúdos', href: '/conteudos' };
+const crumbs = [section, { name: d.title, href: `/conteudos/${article.id}` }];
+---
+<BaseLayout
+  title={d.title}
+  description={d.description}
+  image={d.image}
+  imageAlt={d.imageAlt}
+  type="article"
+  publishedTime={d.date}
+  modifiedTime={d.updated}
+  breadcrumbs={crumbs}
+  noindex={d.example}
+  jsonLd={[{
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: d.title,
+    description: d.description,
+    datePublished: d.date.toISOString(),
+    dateModified: (d.updated ?? d.date).toISOString(),
+    inLanguage: 'pt-BR',
+    articleSection: cat.label,
+    keywords: d.tags.join(', ') || undefined,
+    author: d.author === SITE.name ? { '@type': 'Organization', name: SITE.name, url: SITE.url } : { '@type': 'Person', name: d.author },
+    publisher: { '@type': 'Organization', name: SITE.name, url: SITE.url },
+    image: d.image ? [absoluteUrl(d.image)] : undefined,
+    mainEntityOfPage: absoluteUrl(`/conteudos/${article.id}`),
+  }]}
+>
+  <article class={`tone-${cat.tone}`}>
+    <header class="reading-head">
+      <div class="wrap-text stack" style="--stack: var(--s-4)">
+        <nav aria-label="Você está em" class="crumbs">
+          <a href="/">Início</a> <span aria-hidden="true">/</span> <a href={section.href}>{section.name}</a>
+        </nav>
+        <div class="card-meta">
+          <span class="tag">{isInterview ? 'Entrevista' : cat.label}</span>
+          {d.example && <span class="tag tag-example">Exemplo</span>}
+        </div>
+        <h1>{d.title}</h1>
+        <p class="lede">{d.description}</p>
+        <p class="meta muted">
+          {isInterview && d.interviewee ? <>Conversa com <strong>{d.interviewee}</strong> · </> : <>Por <strong>{d.author}</strong> · </>}
+          <time datetime={d.date.toISOString()}>{fmt.long(d.date)}</time>
+          {d.updated && <> · atualizado em <time datetime={d.updated.toISOString()}>{fmt.long(d.updated)}</time></>}
+          {' '}· {readingTime(article.body)} min de leitura
+        </p>
+      </div>
+    </header>
+
+    <div class="wrap cover-wrap">
+      <Cover seed={article.id} tone={cat.tone} image={d.image} alt={d.imageAlt ?? ''} ratio="3 / 1" eager class="art-cover" />
+    </div>
+
+    <div class="wrap reading-grid">
+      <aside class="side" aria-label="Nesta página">
+        {toc.length > 1 && (
+          <nav class="toc">
+            <p class="side-title">Nesta página</p>
+            <ol role="list">{toc.map((h) => <li><a href={`#${h.slug}`}>{h.text}</a></li>)}</ol>
+          </nav>
+        )}
+      </aside>
+      <div class="prose">
+        <Content />
+        {d.tags.length > 0 && (
+          <ul role="list" class="tags" aria-label="Assuntos">
+            {d.tags.map((t) => <li class="tag tag-outline">#{t}</li>)}
+          </ul>
+        )}
+        <div class="share-wrap"><ShareButtons title={d.title} label={isInterview ? 'Compartilhar esta conversa' : 'Compartilhar este texto'} /></div>
+      </div>
+    </div>
+  </article>
+
+  {related.length > 0 && (
+    <section class="section band">
+      <div class="wrap stack" style="--stack: var(--s-5)">
+        <h2>Continue lendo</h2>
+        <div class="grid" style="--min: 300px">
+          {related.map((a) => <ArticleCard article={a} />)}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <ContributeBand />
+</BaseLayout>
+
+<style>
+  .cover-wrap { margin-bottom: var(--s-7); }
+  .cover-wrap :global(.art-cover) { border-radius: var(--radius-l); }
+  .tags { display: flex; flex-wrap: wrap; gap: var(--s-2); padding: 0 !important; margin-top: var(--s-7) !important; }
+  .tags li { margin: 0 !important; }
+  .tags li::marker { content: ''; }
+  .share-wrap { margin-top: var(--s-7) !important; padding-top: var(--s-5); border-top: 1px solid var(--line); }
+</style>

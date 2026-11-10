@@ -1,0 +1,53 @@
+---
+import type { Crumb } from '../layouts/BaseLayout.astro';
+import type { Tone } from '../data/categories';
+
+interface Props {
+  eyebrow?: string;
+  title: string;
+  lede?: string;
+  breadcrumbs?: Crumb[];
+  tone?: Tone;
+}
+const { eyebrow, title, lede, breadcrumbs, tone = 'coral' } = Astro.props;
+---
+<section class:list={['page-header', `tone-${tone}`]}>
+  <div class="wrap inner">
+    {breadcrumbs && breadcrumbs.length > 0 && (
+      <nav aria-label="Você está em" class="crumbs">
+        <ol role="list">
+          <li><a href="/">Início</a></li>
+          {breadcrumbs.map((c, i) => (
+            <li>
+              {i === breadcrumbs.length - 1 ? <span aria-current="page">{c.name}</span> : <a href={c.href}>{c.name}</a>}
+            </li>
+          ))}
+        </ol>
+      </nav>
+    )}
+    {eyebrow && <p class="eyebrow" style="--dot: var(--tone)">{eyebrow}</p>}
+    <h1 set:html={title} />
+    {lede && <p class="lede">{lede}</p>}
+    <slot />
+  </div>
+  <svg class="deco" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+    <defs><linearGradient id="ph-grad" x1="0" x2="1"><stop offset="0" stop-color="#ff7a45" /><stop offset=".35" stop-color="#f4475f" /><stop offset=".65" stop-color="#8b3fd1" /><stop offset="1" stop-color="#44c3c8" /></linearGradient></defs>
+    <circle cx="75" cy="100" r="58" fill="none" stroke="var(--tone)" stroke-width="10" />
+    <circle cx="125" cy="100" r="58" fill="none" stroke="url(#ph-grad)" stroke-width="10" />
+  </svg>
+</section>
+
+<style>
+  .page-header { position: relative; overflow: hidden; background: radial-gradient(60% 120% at 100% 0%, var(--tag-bg), transparent 70%); padding-block: var(--s-7) var(--s-8); border-bottom: 1px solid var(--line-soft); }
+  .inner { position: relative; z-index: 1; display: flex; flex-direction: column; gap: var(--s-4); }
+  .inner h1 { max-width: 18ch; }
+  .inner .lede { max-width: 46ch; }
+  .crumbs ol { display: flex; flex-wrap: wrap; gap: var(--s-2); font-size: var(--step--1); color: var(--ink-3); }
+  .crumbs li + li::before { content: '/'; margin-right: var(--s-2); color: var(--line); }
+  .crumbs a { color: var(--ink-2); }
+  .crumbs [aria-current] { color: var(--ink-3); }
+  .deco { position: absolute; right: -60px; top: 50%; transform: translateY(-50%); width: min(46vw, 380px); opacity: 0.55; }
+  @media (max-width: 720px) {
+    .deco { top: -40px; transform: none; width: 150px; right: -80px; opacity: 0.35; }
+  }
+</style>

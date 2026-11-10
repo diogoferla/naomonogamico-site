@@ -1,0 +1,135 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Cover from '../../components/Cover.astro';
+import ShareButtons from '../../components/ShareButtons.astro';
+import InitiativeCard from '../../components/InitiativeCard.astro';
+import { getInitiatives, absoluteUrl } from '../../lib/content';
+import { contactLinks } from '../../lib/links';
+import { INITIATIVE_CATEGORIES, findCategory } from '../../data/categories';
+
+export async function getStaticPaths() {
+  const all = await getInitiatives();
+  return all.map((item) => ({ params: { slug: item.id }, props: { item, all } }));
+}
+
+const { item, all } = Astro.props;
+const d = item.data;
+const { Content } = await render(item);
+const hasBody = Boolean(item.body?.trim());
+const cat = findCategory(INITIATIVE_CATEGORIES, d.category);
+const links = contactLinks(d);
+const related = all.filter((p) => p.id !== item.id && p.data.category === d.category).slice(0, 3);
+const crumbs = [{ name: 'Iniciativas', href: '/iniciativas' }, { name: d.name, href: `/iniciativas/${item.id}` }];
+
+const jsonLd = d.example || !d.verified ? [] : [{
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: d.name,
+  description: d.description,
+  url: d.website ?? absoluteUrl(`/iniciativas/${item.id}`),
+  sameAs: [d.instagram, d.link].filter(Boolean),
+  areaServed: d.region,
+}];
+---
+<BaseLayout
+  title={d.name}
+  description={d.description}
+  image={d.image}
+  imageAlt={d.imageAlt}
+  breadcrumbs={crumbs}
+  noindex={d.example}
+  jsonLd={jsonLd}
+>
+  <article class={`tone-${cat.tone}`}>
+    <header class="in-head">
+      <div class="wrap stack" style="--stack: var(--s-4)">
+        <nav aria-label="Você está em" class="crumbs">
+          <a href="/">Início</a> <span aria-hidden="true">/</span> <a href="/iniciativas">Iniciativas</a>
+        </nav>
+        <div class="card-meta">
+          <span class="tag">{cat.label}</span>
+          {d.example && <span class="tag tag-example">Exemplo — não é uma iniciativa real</span>}
+          {!d.verified && !d.example && <span class="tag tag-outline">Informações a confirmar</span>}
+        </div>
+        <h1>{d.name}</h1>
+        <p class="lede">{d.description}</p>
+      </div>
+    </header>
+
+    <div class="wrap in-grid">
+      <div class="in-main stack" style="--stack: var(--s-6)">
+        <Cover seed={item.id} tone={cat.tone} image={d.image} alt={d.imageAlt ?? ''} ratio="16 / 8" eager class="in-cover" />
+        {hasBody && <div class="prose"><Content /></div>}
+        <ShareButtons title={d.name} label="Compartilhar esta iniciativa" />
+      </div>
+      <aside class="in-info" aria-label="Informações da iniciativa">
+        <dl>
+          <div><dt>Tipo</dt><dd>{cat.label}</dd></div>
+          {d.region && <div><dt>Cidade ou abrangência</dt><dd>{d.region}</dd></div>}
+        </dl>
+        {links.length > 0 && (
+          <div class="contacts">
+            <p class="sub-label">Canais oficiais</p>
+            <ul role="list">
+              {links.map((l) => (
+                <li>
+                  <a href={l.href} {...(l.external ? { target: '_blank', rel: 'noopener nofollow' } : {})}>
+                    <span class="cl">{l.label}</span>
+                    {l.text && <span class="ct">{l.text}</span>}
+                    {l.external && <span aria-hidden="true">↗</span>}
+                    {l.external && <span class="sr-only"> (abre em nova aba)</span>}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        <p class="disclaimer">
+          Listar uma iniciativa não significa parceria, patrocínio ou recomendação. Confira sempre os canais oficiais.
+          {!d.verified && !d.example && <> As informações desta página ainda estão sendo confirmadas.</>}
+        </p>
+        <p class="fix"><a href="/contribua?tipo=iniciativa#formulario">Faz parte desta iniciativa? Sugira uma correção</a></p>
+      </aside>
+    </div>
+  </article>
+
+  {related.length > 0 && (
+    <section class="section band">
+      <div class="wrap stack" style="--stack: var(--s-5)">
+        <h2>Outras iniciativas</h2>
+        <div class="grid" style="--min: 290px">{related.map((p) => <InitiativeCard item={p} />)}</div>
+        <p><a class="btn btn-ghost" href="/iniciativas">Ver o diretório completo</a></p>
+      </div>
+    </section>
+  )}
+</BaseLayout>
+
+<style>
+  .in-head { padding-block: var(--s-7) var(--s-6); }
+  .in-head .lede { max-width: 52ch; }
+  .in-grid { display: grid; gap: var(--s-6); padding-bottom: var(--s-8); align-items: start; }
+  .in-main { min-width: 0; }
+  .in-main :global(.in-cover) { border-radius: var(--radius-l); }
+  .in-info {
+    background: var(--card); border: 1px solid var(--line-soft); border-top: 4px solid var(--tone);
+    border-radius: var(--radius-l); padding: var(--s-5); display: flex; flex-direction: column; gap: var(--s-5);
+  }
+  dl { display: flex; flex-direction: column; gap: var(--s-4); }
+  dt, .sub-label { font-size: var(--step--1); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  dd { margin: 0; }
+  .contacts ul { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-2); }
+  .contacts a {
+    display: flex; justify-content: space-between; gap: var(--s-3); align-items: center;
+    padding: 0.7em 0.9em; border: 1px solid var(--line); border-radius: var(--radius-s); text-decoration: none;
+  }
+  .contacts a:hover { border-color: var(--ink); }
+  .cl { font-weight: 600; }
+  .ct { color: var(--ink-2); font-size: var(--step--1); overflow-wrap: anywhere; }
+  .disclaimer { font-size: var(--step--1); color: var(--ink-3); border-top: 1px solid var(--line-soft); padding-top: var(--s-4); }
+  .fix { font-size: var(--step--1); }
+  @media (min-width: 960px) {
+    .in-grid { grid-template-columns: minmax(0, 1fr) 340px; gap: var(--s-8); }
+    .in-info { position: sticky; top: 6rem; }
+  }
+</style>

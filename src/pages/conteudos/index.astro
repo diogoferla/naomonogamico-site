@@ -1,0 +1,95 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../../components/PageHeader.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import EmptyState from '../../components/EmptyState.astro';
+import ContributeBand from '../../components/ContributeBand.astro';
+import { getArticles, absoluteUrl } from '../../lib/content';
+import { ARTICLE_CATEGORIES } from '../../data/categories';
+import { getPage, emphasize } from '../../lib/content';
+const page = (await getPage('conteudos')).data;
+
+const articles = await getArticles();
+const usedCats = ARTICLE_CATEGORIES.filter((c) => articles.some((a) => a.data.category === c.id));
+const crumbs = [{ name: 'Conteúdos', href: '/conteudos' }];
+const description = page.seo_description;
+---
+<BaseLayout
+  title={page.seo_title}
+  description={page.seo_description}
+  breadcrumbs={crumbs}
+  jsonLd={[{
+    '@context': 'https://schema.org',
+    '@type': 'Blog',
+    name: 'Conteúdos — Não Monogâmico',
+    description,
+    inLanguage: 'pt-BR',
+    url: absoluteUrl('/conteudos'),
+    blogPost: articles.map((a) => ({
+      '@type': 'BlogPosting',
+      headline: a.data.title,
+      datePublished: a.data.date.toISOString(),
+      url: absoluteUrl(`/conteudos/${a.id}`),
+    })),
+  }]}
+>
+  <PageHeader
+    eyebrow={page.eyebrow}
+    title={emphasize(page.title)}
+    lede={page.lede}
+    breadcrumbs={crumbs}
+    tone="coral"
+  >
+    <p class="flow-row">
+      <a class="link-arrow" href="/entenda">Guias introdutórios <span aria-hidden="true">→</span></a>
+      <a class="link-arrow" href="/conversas">Conversas e entrevistas <span aria-hidden="true">→</span></a>
+    </p>
+  </PageHeader>
+
+  <section class="section">
+    <div class="wrap stack" style="--stack: var(--s-6)">
+      <h2 class="sr-only">Todos os conteúdos</h2>
+      {usedCats.length > 1 && (
+        <div class="chips" role="group" aria-label="Filtrar por categoria" data-chips>
+          <button type="button" class="chip" data-cat="" aria-pressed="true">Todos</button>
+          {usedCats.map((c) => <button type="button" class="chip" data-cat={c.id} aria-pressed="false">{c.label}</button>)}
+        </div>
+      )}
+
+      {articles.length > 0 ? (
+        <div class="grid" style="--min: 300px" data-list>
+          {articles.map((a) => <ArticleCard article={a} />)}
+        </div>
+      ) : (
+        <EmptyState title="Os primeiros textos estão a caminho." text="Enquanto isso, comece pelos guias introdutórios." ctaHref="/entenda" ctaLabel="Ver guias" />
+      )}
+      <p class="sr-only" aria-live="polite" data-live></p>
+    </div>
+  </section>
+
+  <ContributeBand
+    title="Quer escrever ou sugerir um tema?"
+    text="Estamos abertos a propostas de textos, entrevistas e temas que ainda não foram abordados."
+    type="conteudo"
+    label="Propor um conteúdo"
+  />
+</BaseLayout>
+
+<script>
+  const chips = document.querySelectorAll<HTMLButtonElement>('[data-chips] [data-cat]');
+  const cards = document.querySelectorAll<HTMLElement>('[data-list] [data-article]');
+  const live = document.querySelector<HTMLElement>('[data-live]');
+  chips.forEach((chip) =>
+    chip.addEventListener('click', () => {
+      const cat = chip.dataset.cat;
+      chips.forEach((c) => c.setAttribute('aria-pressed', String(c === chip)));
+      let n = 0;
+      cards.forEach((card) => {
+        const show = !cat || card.dataset.category === cat;
+        card.hidden = !show;
+        if (show) n++;
+      });
+      if (live) live.textContent = `${n} ${n === 1 ? 'conteúdo' : 'conteúdos'}`;
+    }),
+  );
+</script>
